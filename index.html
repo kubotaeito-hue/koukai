@@ -2271,32 +2271,21 @@ function completeTaskStep(customerId, taskType, event) {
   var c = customers.find(function(x) { return x.id === customerId; });
   if (!c) return;
 
-  // 即時フィードバック：押した瞬間にカードを「完了」表示にして反応を体感させる
+  // 即時フィードバック：押した瞬間にボタンを変化させて反応を体感させる
   var btn = event && event.currentTarget ? event.currentTarget : null;
   if (btn) {
     var card = btn.closest('.task-card');
-    if (card) { card.style.opacity = '0.45'; card.style.pointerEvents = 'none'; }
-    btn.textContent = '✓ 完了済';
+    if (card) { card.style.opacity = '0.55'; card.style.pointerEvents = 'none'; }
+    btn.textContent = '✓ 対応済';
     btn.disabled = true;
   }
 
-  var stepNum = taskType === 'prepare' ? 1 : taskType === 'deliver' ? 2 : 3;
+  // チェックリストには触れない。対応履歴に記録するだけ。
+  var stepLabel = taskType === 'prepare' ? '資料作成' : taskType === 'deliver' ? '資料提供' : '更新手続き電話';
   var now = new Date().toISOString();
-  var changed = false;
-  (c.checklist || []).forEach(function(item) {
-    if (item.step === stepNum && !item.checked) {
-      item.checked = true;
-      item.completedAt = now;
-      changed = true;
-    }
-  });
-  if (changed) {
-    var stepLabel = taskType === 'prepare' ? '資料作成' : taskType === 'deliver' ? '資料提供' : '更新手続き電話';
-    c.history.push({ id: uid(), date: now, content: stepLabel + ' 完了（タスク一覧より）' });
-    c.updatedAt = now;
-    save();
-  }
-  // changed の真偽に関わらず必ず再描画（押したのに変わらない、を防ぐ）
+  c.history.push({ id: uid(), date: now, content: stepLabel + ' 対応済（タスク一覧より）' });
+  c.updatedAt = now;
+  save();
   renderAll();
 }
 
