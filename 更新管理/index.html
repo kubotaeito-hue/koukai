@@ -2118,17 +2118,23 @@ function renderTasks() {
       : type === 'today'
         ? 'color:var(--primary); border-bottom:2px solid var(--primary);'
         : 'color:var(--gray-700); border-bottom:2px solid var(--gray-300);';
-    // 同名はまとめる：名前→更新日順に並べ、連続する同名をグループ化
-    var sortedItems = items.slice().sort(function(a, b) {
-      var n = a.customerName.localeCompare(b.customerName, 'ja');
-      if (n !== 0) return n;
-      return (a.renewalDate || '9999-99-99').localeCompare(b.renewalDate || '9999-99-99');
+    // 同名でまとめつつ、更新日の早い順に並べる
+    var byName = {};
+    items.forEach(function(t) {
+      if (!byName[t.customerName]) byName[t.customerName] = [];
+      byName[t.customerName].push(t);
     });
-    var nameGroups = [];
-    sortedItems.forEach(function(t) {
-      var last = nameGroups[nameGroups.length - 1];
-      if (last && last[0].customerName === t.customerName) last.push(t);
-      else nameGroups.push([t]);
+    // 各グループ内は更新日の早い順
+    Object.keys(byName).forEach(function(k) {
+      byName[k].sort(function(a, b) {
+        return (a.renewalDate || '9999-99-99').localeCompare(b.renewalDate || '9999-99-99');
+      });
+    });
+    // グループ自体は「最も早い更新日」順（同日は名前順）
+    var nameGroups = Object.keys(byName).map(function(k) { return byName[k]; }).sort(function(ga, gb) {
+      var d = (ga[0].renewalDate || '9999-99-99').localeCompare(gb[0].renewalDate || '9999-99-99');
+      if (d !== 0) return d;
+      return ga[0].customerName.localeCompare(gb[0].customerName, 'ja');
     });
     var cards = nameGroups.map(function(g) {
       var inner = g.map(function(t) { return buildTaskCard(t, type, todayStr); }).join('');
