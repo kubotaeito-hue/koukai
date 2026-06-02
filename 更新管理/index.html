@@ -536,6 +536,8 @@
     .task-type-deliver { background: #dbeafe; color: #1e40af; }
     .task-type-call    { background: #d1fae5; color: #064e3b; }
     .task-status-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; white-space: nowrap; }
+    .task-card.preview { opacity: 0.72; background: repeating-linear-gradient(45deg, #fafafa, #fafafa 8px, #f3f4f6 8px, #f3f4f6 16px); }
+    .task-preview-badge { flex-shrink: 0; padding: 6px 12px; border-radius: 6px; border: 1px dashed var(--gray-400); background: white; color: var(--gray-500); font-size: 12px; font-weight: 600; white-space: nowrap; }
     .task-name-group { border: 1.5px solid #c7d2fe; border-radius: 8px; padding: 6px; margin: 6px 0; background: #f5f7ff; }
     .task-name-group-header { font-size: 13px; font-weight: 700; color: #3730a3; padding: 2px 4px 6px; }
     .task-name-group .task-card { margin: 4px 0; }
@@ -2012,31 +2014,44 @@ function generateTasks() {
 
   var tasks = [];
 
+  var tomorrowStr = addCalDays(todayStr, 1);
+
   custInfo.forEach(function(x) {
     if (x.currentStep === null) return;
     var c = x.c;
-    // 「本日対応済み（完了ボタン）」の人は今日のタスク一覧から除外。翌日また表示される。
-    if (c.dismissedToday === todayStr) return;
     var status = calcStatus(c);
     var effDeadline = x.effDeadline;
     var submitDeadline = getSubmitDeadline(c); // ビジ総・業災のみ非null
+    var delivDate = deliverySchedule[c.id];
 
-    if (x.currentStep === 1) {
-      // 資料作成：資料提供予定日の2営業日前（過去になる場合は今日）
-      var delivDate = deliverySchedule[c.id];
-      var rawDue = delivDate ? subBusinessDays(delivDate, 2) : (effDeadline ? subtractCalDays(effDeadline, 62) : null);
-      var dueDate = rawDue && rawDue < todayStr ? todayStr : rawDue;
-      tasks.push({ customerId: c.id, customerName: c.name, category: c.category, renewalDate: c.renewalDate, submitDeadline: submitDeadline, taskType: 'prepare', taskLabel: '資料作成', dueDate: dueDate, status: status });
-    } else if (x.currentStep === 2) {
-      // 資料提供：スケジュール日（過去になる場合は今日）
-      var rawDue2 = deliverySchedule[c.id] || todayStr;
-      var dueDate2 = rawDue2 < todayStr ? todayStr : rawDue2;
-      tasks.push({ customerId: c.id, customerName: c.name, category: c.category, renewalDate: c.renewalDate, submitDeadline: submitDeadline, taskType: 'deliver', taskLabel: '資料提供', dueDate: dueDate2, status: status });
-    } else if (x.currentStep === 3) {
-      // 更新手続き電話：実質期限の50日前（ビジ総・業災は提出締め切り日の50日前）
-      var rawDue3 = effDeadline ? subtractCalDays(effDeadline, 50) : null;
-      var dueDate3 = rawDue3 && rawDue3 < todayStr ? todayStr : rawDue3;
-      tasks.push({ customerId: c.id, customerName: c.name, category: c.category, renewalDate: c.renewalDate, submitDeadline: submitDeadline, taskType: 'call', taskLabel: '更新手続き電話', dueDate: dueDate3, status: status });
+    // 各ステップの予定日（自然なスケジュール）
+    var stepDef = {
+      1: { type: 'prepare', label: '資料作成', done: x.step1Done,
+           raw: delivDate ? subBusinessDays(delivDate, 2) : (effDeadline ? subtractCalDays(effDeadline, 62) : null) },
+      2: { type: 'deliver', label: '資料提供', done: x.step2Done,
+           raw: delivDate || (effDeadline ? subtractCalDays(effDeadline, 60) : null) },
+      3: { type: 'call', label: '更新手続き電話', done: x.step3Done,
+           raw: effDeadline ? subtractCalDays(effDeadline, 50) : null }
+    };
+
+    // 現在のステップ＋その先の未完了ステップを全て出す（先読み）
+    for (var s = x.currentStep; s <= 3; s++) {
+      var info = stepDef[s];
+      if (info.done) continue; // 既にチェックリストで完了済みのステップはスキップ
+      var isCurrent = (s === x.currentStep);
+      var due;
+      if (isCurrent) {
+        // 着手対象のステップ：過去なら今日に。本日対応済みなら今日の一覧から消す。
+        if (c.dismissedToday === todayStr) continue;
+        due = info.raw && info.raw < todayStr ? todayStr : info.raw;
+      } else {
+        // 先のステップ：予定（先読み）。最低でも明日に置いて未来欄に表示。
+        due = (!info.raw || info.raw < tomorrowStr) ? tomorrowStr : info.raw;
+      }
+      tasks.push({ customerId: c.id, customerName: c.name, category: c.category,
+        renewalDate: c.renewalDate, submitDeadline: submitDeadline,
+        taskType: info.type, taskLabel: info.label, dueDate: due,
+        status: status, isPreview: !isCurrent });
     }
   });
 
@@ -2107,7 +2122,8 @@ function renderTasks() {
   var overdue = [];
   var groupMap = {};
   tasks.forEach(function(t) {
-    if (t.renewalDate && t.renewalDate < todayStr) {
+    // 先読み（予定）タスクは期限切れ扱いにせず、必ず予定日のグループへ
+    if (!t.isPreview && t.renewalDate && t.renewalDate < todayStr) {
       overdue.push(t); // 更新日が過去 → 真の期限切れ
     } else {
       var key = (!t.dueDate || t.dueDate < todayStr) ? todayStr : t.dueDate;
@@ -2190,6 +2206,12 @@ function buildTaskCard(t, type, todayStr) {
   var catBadge = CAT_BADGE[t.category] || '';
   var borderColor = renewalUrgencyBorder(t.renewalDate, todayStr || toDateStr(new Date()));
   var cardClass = type === 'overdue' ? 'overdue' : type === 'today' ? 'today' : '';
+  if (t.isPreview) cardClass += ' preview';
+
+  // 先読み（予定）タスクは完了ボタンを出さず「予定」バッジを表示
+  var actionPart = t.isPreview
+    ? '<span class="task-preview-badge">予定</span>'
+    : '<button class="task-done-btn" onclick="completeTaskStep(\'' + t.customerId + '\',\'' + t.taskType + '\',event)">&#10003; 完了</button>';
 
   return '<div class="task-card ' + cardClass + '" style="border-left:4px solid ' + borderColor + ';" onclick="openDetail(\'' + t.customerId + '\')">' +
     '<div class="status-dot" style="background:' + stDef.dot + ';width:10px;height:10px;border-radius:50%;flex-shrink:0;"></div>' +
@@ -2208,7 +2230,7 @@ function buildTaskCard(t, type, todayStr) {
         ) +
       '</div>' +
     '</div>' +
-    '<button class="task-done-btn" onclick="completeTaskStep(\'' + t.customerId + '\',\'' + t.taskType + '\',event)">&#10003; 完了</button>' +
+    actionPart +
   '</div>';
 }
 
