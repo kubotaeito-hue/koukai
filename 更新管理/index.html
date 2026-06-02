@@ -553,6 +553,7 @@
     <div class="header-subtitle">保険契約の更新進捗管理</div>
   </div>
   <div style="display:flex; gap:8px; align-items:center;">
+    <button class="btn btn-help btn-sm" id="undoBtn" onclick="undo()" title="直前の操作を取り消す" disabled>&#8630; <span class="btn-label">元に戻す</span></button>
     <button class="btn btn-help btn-sm" onclick="show('modalHelp')" title="使い方">&#10067; <span class="btn-label">使い方</span></button>
     <button class="btn btn-primary btn-sm" onclick="exportData()" title="データをJSONで保存">&#128229; <span class="btn-label">バックアップ</span></button>
     <button class="btn btn-primary btn-sm" onclick="document.getElementById('importFile').click()" title="バックアップから復元">&#128228; <span class="btn-label">復元</span></button>
@@ -1009,7 +1010,37 @@ function save() {
     }
     return;
   }
+  // Undo用：書き換える直前の状態（＝今localStorageにある状態）を退避
+  try {
+    var prevState = localStorage.getItem('renewal-customers');
+    if (prevState !== null) {
+      undoStack.push(prevState);
+      if (undoStack.length > 30) undoStack.shift(); // 最大30手まで
+    }
+  } catch (e) {}
   localStorage.setItem('renewal-customers', JSON.stringify(customers));
+  updateUndoBtn();
+}
+
+var undoStack = [];
+function updateUndoBtn() {
+  var b = document.getElementById('undoBtn');
+  if (b) b.disabled = undoStack.length === 0;
+}
+function undo() {
+  if (undoStack.length === 0) return;
+  var prev = undoStack.pop();
+  try {
+    localStorage.setItem('renewal-customers', prev);
+    customers = JSON.parse(prev);
+  } catch (e) { return; }
+  // 詳細モーダルが開いていれば再描画
+  var dm = document.getElementById('modalDetail');
+  if (dm && !dm.classList.contains('hidden') && typeof renderDetail === 'function') {
+    try { renderDetail(); } catch (e) {}
+  }
+  renderAll();
+  updateUndoBtn();
 }
 function load() {
   if (!_storageOk) { customers = []; return; }
