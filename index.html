@@ -536,6 +536,9 @@
     .task-type-deliver { background: #dbeafe; color: #1e40af; }
     .task-type-call    { background: #d1fae5; color: #064e3b; }
     .task-status-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; white-space: nowrap; }
+    .task-name-group { border: 1.5px solid #c7d2fe; border-radius: 8px; padding: 6px; margin: 6px 0; background: #f5f7ff; }
+    .task-name-group-header { font-size: 13px; font-weight: 700; color: #3730a3; padding: 2px 4px 6px; }
+    .task-name-group .task-card { margin: 4px 0; }
     .task-done-btn { flex-shrink: 0; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--gray-300); background: white; color: var(--gray-600); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; white-space: nowrap; }
     .task-done-btn:hover { background: var(--success); color: white; border-color: var(--success); }
   </style>
@@ -2028,6 +2031,19 @@ function generateTasks() {
     }
   });
 
+  // 同名のお客様はまとめて対応できるよう、同名×同タスク種別の期限を
+  // そのグループ内で最も早い更新日のスケジュール（最も早い期限日）に合わせる
+  var minDue = {};
+  tasks.forEach(function(t) {
+    var k = t.customerName + '|' + t.taskType;
+    var d = t.dueDate || '9999-99-99';
+    if (!minDue[k] || d < minDue[k]) minDue[k] = d;
+  });
+  tasks.forEach(function(t) {
+    var k = t.customerName + '|' + t.taskType;
+    if (minDue[k] && minDue[k] !== '9999-99-99') t.dueDate = minDue[k];
+  });
+
   tasks.sort(function(a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
   return tasks;
 }
@@ -2101,11 +2117,33 @@ function renderTasks() {
       : type === 'today'
         ? 'color:var(--primary); border-bottom:2px solid var(--primary);'
         : 'color:var(--gray-700); border-bottom:2px solid var(--gray-300);';
+    // 同名はまとめる：名前→更新日順に並べ、連続する同名をグループ化
+    var sortedItems = items.slice().sort(function(a, b) {
+      var n = a.customerName.localeCompare(b.customerName, 'ja');
+      if (n !== 0) return n;
+      return (a.renewalDate || '9999-99-99').localeCompare(b.renewalDate || '9999-99-99');
+    });
+    var nameGroups = [];
+    sortedItems.forEach(function(t) {
+      var last = nameGroups[nameGroups.length - 1];
+      if (last && last[0].customerName === t.customerName) last.push(t);
+      else nameGroups.push([t]);
+    });
+    var cards = nameGroups.map(function(g) {
+      var inner = g.map(function(t) { return buildTaskCard(t, type, todayStr); }).join('');
+      if (g.length === 1) return inner;
+      // 同名複数：まとめ枠で囲む
+      return '<div class="task-name-group">' +
+        '<div class="task-name-group-header">&#128101; ' + esc(g[0].customerName) + ' 様' +
+          '<span style="font-size:11px;font-weight:normal;color:var(--gray-400);margin-left:6px;">（' + g.length + '件まとめて対応）</span>' +
+        '</div>' + inner +
+      '</div>';
+    }).join('');
     return '<div class="task-date-group">' +
       '<div class="task-date-header" style="' + headerStyle + '">' +
         heading + '<span class="task-count" style="font-size:12px;font-weight:normal;color:var(--gray-400);margin-left:8px;">' + items.length + '件</span>' +
       '</div>' +
-      items.map(function(t) { return buildTaskCard(t, type, todayStr); }).join('') +
+      cards +
     '</div>';
   }
 
