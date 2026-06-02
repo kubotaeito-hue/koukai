@@ -1,0 +1,2215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>更新管理</title>
+  <style>
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1e429f;
+      --success: #0e9f6e;
+      --warning: #e3a008;
+      --danger: #f05252;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .header-brand { display: flex; flex-direction: column; }
+    .header-title { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+    .header-subtitle { font-size: 11px; opacity: 0.75; margin-top: 1px; }
+
+    /* ---- Buttons ---- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .btn-primary { background: white; color: var(--primary); }
+    .btn-primary:hover { background: var(--gray-100); }
+    .btn-help { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.4); }
+    .btn-help:hover { background: rgba(255,255,255,0.25); }
+    .btn-blue { background: var(--primary); color: white; }
+    .btn-blue:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-secondary { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
+    .btn-secondary:hover { background: var(--gray-200); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: #e02424; }
+    .btn-sm { padding: 5px 12px; font-size: 13px; }
+    .btn-xs { padding: 3px 8px; font-size: 12px; }
+    .btn-icon { padding: 6px 8px; }
+
+    /* ---- Container ---- */
+    .container { max-width: 1300px; margin: 0 auto; padding: 20px 24px; }
+
+    /* ---- Stats ---- */
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 8px;
+      padding: 14px 18px;
+      border: 1px solid var(--gray-200);
+      flex: 1;
+      min-width: 100px;
+      text-align: center;
+    }
+    .stat-value { font-size: 28px; font-weight: 700; }
+    .stat-label { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+
+    /* ---- Toolbar ---- */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 180px;
+      padding: 8px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+    .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,86,219,0.15); }
+    .filter-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid var(--gray-300);
+      background: white;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .filter-btn:hover, .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .sort-select {
+      padding: 6px 10px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 13px;
+      background: white;
+      outline: none;
+      font-family: inherit;
+    }
+
+    /* ---- Month group ---- */
+    .month-group { margin-bottom: 28px; }
+    .month-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      margin-bottom: 10px;
+      border-bottom: 2px solid var(--gray-300);
+    }
+    .month-header-label { font-size: 16px; font-weight: 700; color: var(--gray-700); }
+    .month-header-count { font-size: 12px; color: var(--gray-400); }
+    .month-header-progress { margin-left: auto; font-size: 13px; color: var(--gray-500); white-space: nowrap; }
+
+    /* ---- Customer card ---- */
+    .customer-list { display: flex; flex-direction: column; gap: 8px; }
+    .customer-card {
+      background: white;
+      border-radius: 8px;
+      border: 1px solid var(--gray-200);
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: grid;
+      grid-template-columns: 14px 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .customer-card:hover { border-color: var(--primary); box-shadow: 0 2px 10px rgba(26,86,219,0.1); transform: translateY(-1px); }
+    .customer-card.done { border-left: 4px solid var(--success); background: #f0fdf4; }
+    .status-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+    .customer-main h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .customer-meta { display: flex; gap: 8px; font-size: 12px; color: var(--gray-500); flex-wrap: wrap; align-items: center; }
+    .progress-col { text-align: right; font-size: 12px; color: var(--gray-500); white-space: nowrap; min-width: 90px; }
+    .progress-bar-wrap { width: 80px; height: 6px; background: var(--gray-200); border-radius: 3px; margin: 4px 0 2px auto; }
+    .progress-bar { height: 100%; border-radius: 3px; background: var(--primary); transition: width 0.3s; }
+    .progress-bar.full { background: var(--success); }
+
+    /* ---- Badge ---- */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .badge-auto      { background: #dbeafe; color: #1e40af; }
+    .badge-auto_corp { background: #bfdbfe; color: #1e3a8a; }
+    .badge-fleet     { background: #e0e7ff; color: #3730a3; }
+    .badge-fire      { background: #fee2e2; color: #991b1b; }
+    .badge-kigsogo   { background: #fecaca; color: #7f1d1d; }
+    .badge-shakuya   { background: #fed7aa; color: #7c2d12; }
+    .badge-bizmas    { background: #fef9c3; color: #713f12; }
+    .badge-bizso     { background: #fef3c7; color: #92400e; }
+    .badge-gyosai    { background: #d1fae5; color: #064e3b; }
+    .badge-kigai     { background: #dcfce7; color: #14532d; }
+    .badge-golf      { background: #f0fdf4; color: #166534; }
+    .badge-other     { background: #f3f4f6; color: #374151; }
+    .badge-not-started { background: var(--gray-100); color: var(--gray-600); }
+    .badge-in-progress { background: #fef3c7; color: #92400e; }
+    .badge-done        { background: #d1fae5; color: #064e3b; }
+
+    /* ---- Empty state ---- */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--gray-400); }
+    .empty-state div { margin-top: 10px; font-size: 14px; }
+
+    /* ---- Modal ---- */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal {
+      background: white;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 700px;
+      max-height: 92vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-lg { max-width: 860px; }
+    .modal-xl { max-width: 1000px; }
+    .modal-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 1;
+      border-radius: 12px 12px 0 0;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; }
+    .modal-subtitle { font-size: 12px; color: var(--gray-500); margin-top: 3px; }
+    .modal-close {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: none;
+      background: var(--gray-100);
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--gray-600);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .modal-close:hover { background: var(--gray-200); }
+    .modal-body { padding: 18px 22px; flex: 1; }
+    .modal-footer {
+      padding: 14px 22px;
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      position: sticky;
+      bottom: 0;
+      background: white;
+      border-radius: 0 0 12px 12px;
+    }
+    .hidden { display: none !important; }
+
+    /* ---- Form ---- */
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-600);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--gray-200);
+      padding-bottom: 7px;
+      margin: 18px 0 14px;
+    }
+    .section-title:first-child { margin-top: 0; }
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-700); margin-bottom: 5px; }
+    .form-required { color: var(--danger); }
+    .form-control {
+      width: 100%;
+      padding: 8px 11px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,86,219,0.15); }
+    textarea.form-control { resize: vertical; }
+    select.form-control {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 20px;
+      padding-right: 32px;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ---- Batch table ---- */
+    .batch-table-wrap { overflow-x: auto; }
+    .batch-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .batch-table th {
+      background: var(--gray-100);
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-600);
+      border: 1px solid var(--gray-200);
+      white-space: nowrap;
+    }
+    .batch-table td {
+      padding: 5px 6px;
+      border: 1px solid var(--gray-200);
+      vertical-align: middle;
+    }
+    .batch-table input, .batch-table select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--gray-300);
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+    .batch-table input:focus, .batch-table select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(26,86,219,0.15);
+    }
+    .batch-table .btn-del-row {
+      background: none; border: none; cursor: pointer;
+      color: var(--gray-400); font-size: 16px; padding: 4px 6px;
+      border-radius: 4px; font-family: inherit;
+    }
+    .batch-table .btn-del-row:hover { background: #fee2e2; color: var(--danger); }
+    .batch-add-row { margin-top: 10px; display: flex; gap: 8px; align-items: center; }
+
+    /* ---- Tabs ---- */
+    .tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 18px; gap: 4px; }
+    .tab {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--gray-500);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.15s;
+      border-radius: 4px 4px 0 0;
+    }
+    .tab:hover { color: var(--primary); background: var(--gray-50); }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ---- Checklist ---- */
+    .checklist { display: flex; flex-direction: column; gap: 6px; }
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--gray-50);
+      border-radius: 6px;
+      border: 1px solid var(--gray-200);
+      transition: background 0.15s;
+    }
+    .checklist-item.done { background: #f0fdf4; border-color: #86efac; }
+    .checklist-item input[type="checkbox"] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--success); flex-shrink: 0; }
+    .checklist-item .chk-label { flex: 1; font-size: 14px; cursor: pointer; }
+    .checklist-item.done .chk-label { text-decoration: line-through; color: var(--gray-400); }
+    .chk-date { font-size: 11px; color: var(--gray-400); white-space: nowrap; }
+    .chk-btn { width: 26px; height: 26px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; background: transparent; color: var(--gray-500); flex-shrink: 0; font-family: inherit; }
+    .chk-btn:hover { background: var(--gray-200); color: var(--gray-700); }
+    .chk-btn.del:hover { background: #fee2e2; color: var(--danger); }
+    .chk-actions { display: flex; gap: 2px; margin-left: 4px; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
+    .checklist-item:hover .chk-actions { opacity: 1; }
+    .chk-add-form { display: flex; gap: 8px; margin-top: 12px; align-items: center; padding-top: 10px; border-top: 1px dashed var(--gray-300); }
+    .progress-summary { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
+    /* ---- Checklist section header ---- */
+    .chk-section {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 12px 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chk-section:first-of-type { padding-top: 0; }
+    .chk-section-line { flex: 1; height: 1px; background: var(--gray-200); }
+
+    /* ---- Info grid ---- */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .info-item label { font-size: 11px; color: var(--gray-500); display: block; margin-bottom: 2px; }
+    .info-item span { font-size: 14px; }
+
+    /* ---- History ---- */
+    .history-list { position: relative; padding-left: 32px; }
+    .history-list::before { content:''; position:absolute; left:8px; top:0; bottom:0; width:2px; background:var(--gray-200); }
+    .history-entry { position: relative; margin-bottom: 14px; }
+    .history-dot { position:absolute; left:-28px; top:5px; width:12px; height:12px; border-radius:50%; background:var(--primary); border:2px solid white; box-shadow:0 0 0 2px var(--primary); }
+    .history-time { font-size: 11px; color: var(--gray-400); margin-bottom: 4px; }
+    .history-text {
+      font-size: 14px; color: var(--gray-700);
+      background: var(--gray-50); padding: 9px 12px;
+      border-radius: 6px; border: 1px solid var(--gray-200);
+      white-space: pre-wrap; word-break: break-all;
+    }
+    .history-add { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 18px; }
+    .history-add textarea { flex:1; min-height:56px; }
+
+    /* ---- Next action ---- */
+    .next-action-box {
+      background: #fffbeb;
+      border: 2px solid #f59e0b;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+    }
+    .next-action-label {
+      font-size: 12px; font-weight: 700; color: #92400e;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .next-action-textarea {
+      width: 100%; border: 1px solid #fcd34d; border-radius: 6px;
+      background: white; padding: 8px 10px; font-size: 14px;
+      font-family: inherit; resize: vertical; min-height: 60px; outline: none;
+    }
+    .next-action-textarea:focus { border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.2); }
+    .next-action-textarea::placeholder { color: #d97706; opacity: 0.6; }
+
+    /* ---- Status selector ---- */
+    .status-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .status-btn {
+      padding: 6px 16px; border-radius: 20px; font-size: 13px;
+      cursor: pointer; border: 2px solid transparent; transition: all 0.15s;
+      font-family: inherit; font-weight: 500;
+    }
+    .status-btn.active { border-color: var(--gray-800) !important; }
+
+    /* ---- Tip box ---- */
+    .tip-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:10px 12px; font-size:12px; color:#1e40af; margin-bottom:14px; }
+
+    /* ---- Name group (同一契約者まとめ) ---- */
+    .name-group {
+      border-left: 3px solid var(--primary);
+      border-radius: 0 8px 8px 0;
+      padding-left: 10px;
+      background: #f0f5ff;
+    }
+    .name-group-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      padding: 7px 4px 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .name-group-header .ng-count {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--gray-500);
+    }
+    .name-group .customer-card {
+      border-left: none;
+      border-radius: 6px;
+      margin-bottom: 4px;
+    }
+    .name-group .customer-card:last-child { margin-bottom: 6px; }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 700px) {
+      .header { padding: 0 10px; }
+      .header-title { font-size: 14px; }
+      .container { padding: 10px; }
+      .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+      .stat-card { padding: 10px 6px; }
+      .stat-value { font-size: 22px; }
+      .toolbar { gap: 7px; }
+      .search-input { width: 100%; flex: 1 1 100%; font-size: 16px; }
+      .customer-card { grid-template-columns: 12px 1fr; gap: 10px; padding: 12px 10px; }
+      .progress-col { display: none; }
+      .modal { max-height: 96vh; }
+      .modal-body { padding: 14px 16px; }
+      .modal-header { padding: 14px 16px; }
+      .form-row { grid-template-columns: 1fr; }
+      .info-grid { grid-template-columns: 1fr; }
+      .batch-table { font-size: 13px; }
+      .btn-label { display: none; }
+    }
+  </style>
+  <style>
+    /* ---- View tabs ---- */
+    .view-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid var(--gray-200); }
+    .view-tab { padding: 9px 22px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--gray-500); border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: inherit; transition: color 0.15s; }
+    .view-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .view-tab:hover:not(.active) { color: var(--gray-700); background: var(--gray-50); }
+
+    /* ---- Task view ---- */
+    .task-group { margin-bottom: 24px; }
+    .task-date-header { display: flex; align-items: center; gap: 10px; padding: 6px 0; margin-bottom: 8px; border-bottom: 2px solid var(--gray-300); }
+    .task-date-label { font-size: 15px; font-weight: 700; color: var(--gray-700); }
+    .task-date-count { font-size: 12px; color: var(--gray-400); margin-left: auto; }
+    .task-date-group { margin-bottom: 24px; }
+    .task-date-header { display: flex; align-items: center; padding: 6px 0; margin-bottom: 10px; font-size: 15px; font-weight: 700; }
+    .task-count { font-size: 12px; font-weight: normal; color: var(--gray-400); margin-left: 8px; }
+    .task-card { background: white; border-radius: 8px; border: 1px solid var(--gray-200); border-left-width: 4px; padding: 10px 14px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+    .task-card:hover { box-shadow: 0 2px 8px rgba(26,86,219,0.12); transform: translateY(-1px); }
+    .task-card.overdue { background: #fff5f5; }
+    .task-card.today   { background: #f0f7ff; }
+    .task-info { flex: 1; min-width: 0; }
+    .task-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .task-detail { font-size: 12px; color: var(--gray-500); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .task-type-badge { padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+    .task-type-prepare { background: #fef3c7; color: #92400e; }
+    .task-type-deliver { background: #dbeafe; color: #1e40af; }
+    .task-type-call    { background: #d1fae5; color: #064e3b; }
+    .task-status-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; white-space: nowrap; }
+    .task-done-btn { flex-shrink: 0; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--gray-300); background: white; color: var(--gray-600); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; white-space: nowrap; }
+    .task-done-btn:hover { background: var(--success); color: white; border-color: var(--success); }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">
+    <div class="header-title">&#128203; 更新管理</div>
+    <div class="header-subtitle">保険契約の更新進捗管理</div>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <button class="btn btn-help btn-sm" onclick="show('modalHelp')" title="使い方">&#10067; <span class="btn-label">使い方</span></button>
+    <button class="btn btn-primary btn-sm" onclick="exportData()" title="データをJSONで保存">&#128229; <span class="btn-label">バックアップ</span></button>
+    <button class="btn btn-primary btn-sm" onclick="document.getElementById('importFile').click()" title="バックアップから復元">&#128228; <span class="btn-label">復元</span></button>
+    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(this)">
+  </div>
+</header>
+
+<main class="container">
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- View switcher -->
+  <div class="view-tabs">
+    <button class="view-tab active" id="vtab-list" onclick="switchView('list')">&#128203; お客様一覧</button>
+    <button class="view-tab" id="vtab-tasks" onclick="switchView('tasks')">&#128197; タスク一覧</button>
+  </div>
+
+  <!-- List view toolbar -->
+  <div class="toolbar" id="listToolbar">
+    <input type="text" class="search-input" id="searchInput" placeholder="&#128269; お客様名で検索..." oninput="renderList()">
+    <button class="filter-btn active" data-filter="all" onclick="setFilter(this)">すべて</button>
+    <button class="filter-btn" data-filter="not-started" onclick="setFilter(this)">未着手</button>
+    <button class="filter-btn" data-filter="in-progress" onclick="setFilter(this)">対応中</button>
+    <button class="filter-btn" data-filter="waiting" onclick="setFilter(this)">相手待ち</button>
+    <button class="filter-btn" data-filter="done" onclick="setFilter(this)">完了</button>
+    <select class="sort-select" id="monthFilter" onchange="renderList()">
+      <option value="all">全月表示</option>
+    </select>
+    <button class="btn btn-blue btn-sm" onclick="openBatch()">&#43; 一括登録</button>
+    <button class="btn btn-secondary btn-sm" onclick="openSingle()">&#43; 1件登録</button>
+  </div>
+
+  <!-- Task view toolbar -->
+  <div class="toolbar hidden" id="taskToolbar">
+    <span style="font-size:13px; color:var(--gray-500);">未着手・対応中・相手待ちのタスクを日付順に表示します（完了は除外）</span>
+    <button class="btn btn-secondary btn-sm" onclick="downloadTodayTasks()" title="今日のタスクをメモ帳用テキストで保存">&#128196; 今日のタスクをメモ帳に</button>
+    <button class="btn btn-blue btn-sm" onclick="openBatch()">&#43; 一括登録</button>
+    <button class="btn btn-secondary btn-sm" onclick="openSingle()">&#43; 1件登録</button>
+  </div>
+
+  <!-- List view -->
+  <div id="listView">
+    <div id="mainList"></div>
+  </div>
+
+  <!-- Task view -->
+  <div id="taskView" class="hidden">
+    <div id="taskList"></div>
+  </div>
+</main>
+
+<!-- ===== Batch Registration Modal ===== -->
+<div class="modal-overlay hidden" id="modalBatch">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">&#43; 一括登録</div>
+        <div class="modal-subtitle">更新月のお客様をまとめて登録できます。Tabキーで次の欄へ移動、Enterで行を追加。</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalBatch')">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="tip-box">&#128161; 同じ月のお客様をまとめて入力してください。更新日は行ごとに日にち（数字）を入力してください。Tabキーで次の欄へ移動、Enterで行を追加。</div>
+      <div class="form-row" style="margin-bottom:16px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">更新月 <span class="form-required">*</span></label>
+          <input type="month" class="form-control" id="b-month" onchange="batchMonthChanged()">
+        </div>
+      </div>
+
+      <div class="batch-table-wrap">
+        <table class="batch-table" id="batchTable">
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th style="min-width:170px;">お客様名 <span style="color:var(--danger);">*</span></th>
+              <th style="width:70px;">更新日（日）<span style="color:var(--danger);">*</span></th>
+              <th style="min-width:150px;">保険種別 <span style="color:var(--danger);">*</span></th>
+              <th style="min-width:130px;">メモ（任意）</th>
+              <th style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="batchBody">
+          </tbody>
+        </table>
+      </div>
+      <div class="batch-add-row">
+        <button class="btn btn-secondary btn-sm" onclick="addBatchRow()">&#43; 行を追加</button>
+        <span style="font-size:12px; color:var(--gray-400);">または最終行でEnterキー</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalBatch')">キャンセル</button>
+      <button class="btn btn-blue" onclick="saveBatch()">&#10003; 登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Single Registration Modal ===== -->
+<div class="modal-overlay hidden" id="modalSingle">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">&#43; 1件登録</div>
+        <div class="modal-subtitle">お客様を1件登録します</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalSingle')">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">お客様名 <span class="form-required">*</span></label>
+          <input type="text" class="form-control" id="s-name" placeholder="山田 太郎">
+        </div>
+        <div class="form-group">
+          <label class="form-label">更新日 <span class="form-required">*</span></label>
+          <input type="date" class="form-control" id="s-date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">保険種別 <span class="form-required">*</span></label>
+        <select class="form-control" id="s-category">
+          <option value="auto">自動車</option>
+          <option value="auto_corp">自動車（法人）</option>
+          <option value="fleet">フリート</option>
+          <option value="fire">火災</option>
+          <option value="kigsogo">企業総合</option>
+          <option value="shakuya">借家人賠償</option>
+          <option value="bizmas">ビジマス</option>
+          <option value="bizso">ビジ総</option>
+          <option value="gyosai">業災</option>
+          <option value="kigai">傷害</option>
+          <option value="golf">ゴルフ</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">メモ（任意）</label>
+        <textarea class="form-control" id="s-memo" rows="2" placeholder="特記事項など..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalSingle')">キャンセル</button>
+      <button class="btn btn-blue" onclick="saveSingle()">&#10003; 登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Detail Modal ===== -->
+<div class="modal-overlay hidden" id="modalDetail">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div style="flex:1; min-width:0;">
+        <div class="modal-title" id="d-title"></div>
+        <div class="modal-subtitle" id="d-subtitle"></div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-shrink:0; margin-left:12px;">
+        <button class="btn btn-secondary btn-xs" onclick="openEdit()">&#9998; 編集</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteCustomer()">&#128465;</button>
+        <button class="modal-close" onclick="closeModal('modalDetail')">&#215;</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <div class="tab active" onclick="tab('overview',this)">概要</div>
+        <div class="tab" onclick="tab('checklist',this)">チェックリスト</div>
+        <div class="tab" onclick="tab('history',this)">対応履歴</div>
+      </div>
+
+      <!-- Overview -->
+      <div class="tab-content active" id="tc-overview">
+        <div class="section-title" style="margin-top:0;">ステータス</div>
+        <div class="status-row" id="d-status-row"></div>
+        <div class="section-title">お客様情報</div>
+        <div class="info-grid" id="d-customer"></div>
+        <div class="section-title">メモ</div>
+        <textarea class="form-control" id="d-notes" rows="4" placeholder="自由メモ..." oninput="saveNotes()"></textarea>
+      </div>
+
+      <!-- Checklist -->
+      <div class="tab-content" id="tc-checklist">
+        <div class="next-action-box">
+          <div class="next-action-label">&#9654; ネクストアクション</div>
+          <textarea class="next-action-textarea" id="d-next-action" rows="2"
+            placeholder="次にやることを入力（例：資料を作成してお客様に送付する）"
+            oninput="saveNextAction()"></textarea>
+        </div>
+        <div class="progress-summary">
+          <span id="d-chk-label" style="font-size:14px; font-weight:600;"></span>
+          <div class="progress-bar-wrap" style="width:140px;">
+            <div class="progress-bar" id="d-chk-bar"></div>
+          </div>
+        </div>
+        <div class="checklist" id="d-checklist"></div>
+        <div class="chk-add-form">
+          <input type="text" class="form-control" id="chk-new-text" placeholder="チェック項目を追加..." style="flex:1;" onkeydown="if(event.key==='Enter')addCheckItem()">
+          <button class="btn btn-blue btn-sm" onclick="addCheckItem()">&#43; 追加</button>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="tab-content" id="tc-history">
+        <div class="history-add">
+          <textarea class="form-control" id="d-new-hist" placeholder="対応内容を入力..." rows="2"></textarea>
+          <button class="btn btn-blue btn-sm" onclick="addHistory()">追加</button>
+        </div>
+        <div id="d-history"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Edit Modal ===== -->
+<div class="modal-overlay hidden" id="modalEdit">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">お客様情報を編集</div>
+      <button class="modal-close" onclick="closeModal('modalEdit')">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">お客様名 <span class="form-required">*</span></label>
+          <input type="text" class="form-control" id="e-name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">更新日 <span class="form-required">*</span></label>
+          <input type="date" class="form-control" id="e-date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">保険種別 <span class="form-required">*</span></label>
+        <select class="form-control" id="e-category">
+          <option value="auto">自動車</option>
+          <option value="auto_corp">自動車（法人）</option>
+          <option value="fleet">フリート</option>
+          <option value="fire">火災</option>
+          <option value="kigsogo">企業総合</option>
+          <option value="shakuya">借家人賠償</option>
+          <option value="bizmas">ビジマス</option>
+          <option value="bizso">ビジ総</option>
+          <option value="gyosai">業災</option>
+          <option value="kigai">傷害</option>
+          <option value="golf">ゴルフ</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">メモ</label>
+        <textarea class="form-control" id="e-memo" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalEdit')">キャンセル</button>
+      <button class="btn btn-blue" onclick="saveEdit()">&#10003; 保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Help Modal ===== -->
+<div class="modal-overlay hidden" id="modalHelp">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-header">
+      <div class="modal-title">&#10067; 更新管理アプリ　使い方ガイド</div>
+      <button class="modal-close" onclick="closeModal('modalHelp')">&#215;</button>
+    </div>
+    <div class="modal-body" style="font-size:14px; line-height:1.8;">
+
+      <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:4px;margin-bottom:20px;">
+        <strong>&#127919; このアプリの目的：</strong>保険更新の対応漏れ・遅れを防ぐため、更新日から逆算した作業スケジュールを自動生成し、その日やるべきことを一目で確認できるようにします。
+      </div>
+
+      <!-- 基本の流れ -->
+      <div style="font-size:15px;font-weight:700;color:#1a56db;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #dbeafe;">&#128203; 基本の流れ</div>
+      <ol style="padding-left:20px;margin-bottom:20px;">
+        <li style="margin-bottom:6px;"><strong>一括登録</strong>でその月の更新顧客をまとめて入力（お客様名・更新日・保険種別）</li>
+        <li style="margin-bottom:6px;"><strong>タスク一覧</strong>で今日やるべき作業を確認</li>
+        <li style="margin-bottom:6px;">作業が終わったら<strong>「✓ 完了」</strong>ボタンを押して次のステップへ進める</li>
+        <li style="margin-bottom:6px;">詳細画面でステータスや個別チェックリストを管理</li>
+      </ol>
+
+      <!-- ステータス -->
+      <div style="font-size:15px;font-weight:700;color:#1a56db;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #dbeafe;">&#128308; ステータスについて</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">
+        <tr style="background:#f3f4f6;">
+          <th style="padding:6px 10px;text-align:left;border:1px solid #e5e7eb;">ステータス</th>
+          <th style="padding:6px 10px;text-align:left;border:1px solid #e5e7eb;">意味</th>
+        </tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="background:#f3f4f6;color:#4b5563;padding:2px 8px;border-radius:4px;">未着手</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">まだ何も始めていない状態</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;">対応中</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">チェックリストを一部完了、引き続き対応中</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:4px;">相手待ち</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">お客様の返答や承認を待っている状態。タスクは引き続き表示</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="background:#d1fae5;color:#064e3b;padding:2px 8px;border-radius:4px;">完了</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">更新手続き完了。タスク一覧から自動的に除外される</td></tr>
+      </table>
+
+      <!-- タスク自動生成 -->
+      <div style="font-size:15px;font-weight:700;color:#1a56db;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #dbeafe;">&#128197; タスクの自動スケジュール</div>
+      <p style="margin-bottom:8px;">チェックリストの進捗に応じて、以下のタスクが自動で日付に割り当てられます。</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:13px;">
+        <tr style="background:#f3f4f6;">
+          <th style="padding:6px 10px;text-align:left;border:1px solid #e5e7eb;">タスク</th>
+          <th style="padding:6px 10px;text-align:left;border:1px solid #e5e7eb;">期限の目安</th>
+        </tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-weight:700;">資料作成</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">資料提供予定日の2営業日前</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:4px;font-weight:700;">資料提供</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">更新日の60日前を締め切りに、平日1日5件ずつ自動配分</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="background:#d1fae5;color:#064e3b;padding:2px 8px;border-radius:4px;font-weight:700;">更新手続き電話</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">更新日の50日前</td></tr>
+      </table>
+      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:8px 12px;font-size:13px;margin-bottom:20px;">
+        &#128161; <strong>ビジ総・業災は特別ルール：</strong>更新月の<strong>前月10日</strong>が提出締め切りとなり、すべてのタスクはこの日を基準に逆算されます。カードに「提出締切」バッジが表示されます。
+      </div>
+
+      <!-- タスクカードの色 -->
+      <div style="font-size:15px;font-weight:700;color:#1a56db;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #dbeafe;">&#127384; タスクカードの左ボーダーの色</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">
+        <tr style="background:#f3f4f6;"><th style="padding:6px 10px;border:1px solid #e5e7eb;">色</th><th style="padding:6px 10px;border:1px solid #e5e7eb;">意味（更新日まで）</th></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="color:#f87171;font-weight:700;">■ 赤</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">10日以内または超過（要即対応）</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="color:#fb923c;font-weight:700;">■ オレンジ</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">20日以内（急いで動く）</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="color:#eab308;font-weight:700;">■ 黄</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">30日以内（早めに対応）</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;"><span style="color:#9ca3af;font-weight:700;">■ グレー</span></td><td style="padding:6px 10px;border:1px solid #e5e7eb;">31日以上（余裕あり）</td></tr>
+      </table>
+
+      <!-- 登録方法 -->
+      <div style="font-size:15px;font-weight:700;color:#1a56db;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #dbeafe;">&#43; 登録方法</div>
+      <ul style="padding-left:20px;margin-bottom:20px;">
+        <li style="margin-bottom:4px;"><strong>一括登録：</strong>同じ月の顧客をまとめて入力。更新月を選んでお客様名・更新日（日）・保険種別を入力。Tabで次の欄、Enterで行追加。</li>
+        <li style="margin-bottom:4px;"><strong>1件登録：</strong>個別に1件ずつ追加したい場合に使用。</li>
+      </ul>
+
+      <!-- データ保存 -->
+      <div style="font-size:15px;font-weight:700;color:#1a56db;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #dbeafe;">&#128229; データの保存・復元</div>
+      <ul style="padding-left:20px;margin-bottom:12px;">
+        <li style="margin-bottom:4px;">データはブラウザの<strong>ローカルストレージ</strong>に自動保存されます（ファイルを直接ブラウザで開いた場合のみ）。</li>
+        <li style="margin-bottom:4px;"><strong>バックアップ：</strong>JSONファイルとして保存。定期的にバックアップフォルダへ保存してください。</li>
+        <li style="margin-bottom:4px;"><strong>復元：</strong>バックアップJSONを選択すると全データを復元できます。</li>
+      </ul>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:4px;padding:8px 12px;font-size:13px;">
+        &#9888; <strong>注意：</strong>このファイルはWindowsエクスプローラーからダブルクリックして直接ブラウザで開いてください。他の方法（メール添付やプレビューなど）で開くとデータが保存されません。
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-blue" onclick="closeModal('modalHelp')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  alert('JSエラー: ' + msg + '\n行: ' + line + '\n' + (err ? err.stack : ''));
+};
+// ============================================================
+// 定数定義
+// ============================================================
+const CAT_LABEL = {
+  auto:      '自動車',
+  auto_corp: '自動車（法人）',
+  fleet:     'フリート',
+  fire:      '火災',
+  kigsogo:   '企業総合',
+  shakuya:   '借家人賠償',
+  bizmas:    'ビジマス',
+  bizso:     'ビジ総',
+  gyosai:    '業災',
+  kigai:     '傷害',
+  golf:      'ゴルフ',
+  other:     'その他'
+};
+
+const CAT_BADGE = {
+  auto:      'badge-auto',
+  auto_corp: 'badge-auto_corp',
+  fleet:     'badge-fleet',
+  fire:      'badge-fire',
+  kigsogo:   'badge-kigsogo',
+  shakuya:   'badge-shakuya',
+  bizmas:    'badge-bizmas',
+  bizso:     'badge-bizso',
+  gyosai:    'badge-gyosai',
+  kigai:     'badge-kigai',
+  golf:      'badge-golf',
+  other:     'badge-other'
+};
+
+// 共通チェックリスト（資料作成内容だけ種別ごとに変える）
+function makeChecklist(step1extra) {
+  return [
+    ...step1extra.map(label => ({ label, step: 1 })),
+    { label: '【資料作成】更新見積書の作成', step: 1 },
+    { label: '【資料提供】お客様へ更新資料を提供', step: 2 },
+    { label: '【更新手続き電話】更新内容の確認・ご説明', step: 3 },
+    { label: '【更新手続き電話】更新のご承認をいただく', step: 3 },
+    { label: '更新手続き完了・保険料の確認', step: 3 }
+  ];
+}
+
+const CHECKLISTS = {
+  auto:      makeChecklist(['【資料作成】等級・車両情報の確認']),
+  auto_corp: makeChecklist(['【資料作成】等級・車両情報の確認', '【資料作成】法人名義・使用目的の確認']),
+  fleet:     makeChecklist(['【資料作成】フリート台数・車両リストの確認', '【資料作成】事故成績の確認']),
+  fire:      makeChecklist(['【資料作成】建物情報・補償内容の確認']),
+  kigsogo:   makeChecklist(['【資料作成】売上高・財物・賠償内容の確認']),
+  shakuya:   makeChecklist(['【資料作成】賃貸物件情報・補償内容の確認']),
+  bizmas:    makeChecklist(['【資料作成】事業内容・補償内容の確認']),
+  bizso:     makeChecklist(['【資料作成】事業内容・補償内容の確認']),
+  gyosai:    makeChecklist(['【資料作成】従業員数・業務内容の確認']),
+  kigai:     makeChecklist(['【資料作成】補償内容・対象人数の確認']),
+  golf:      makeChecklist(['【資料作成】補償内容の確認']),
+  other:     makeChecklist(['【資料作成】補償内容の確認'])
+};
+
+const STATUS_DEF = {
+  'not-started': { label: '未着手',   bg: '#f3f4f6', fg: '#4b5563', dot: '#9ca3af' },
+  'in-progress': { label: '対応中',   bg: '#fef3c7', fg: '#92400e', dot: '#e3a008' },
+  'waiting':     { label: '相手待ち', bg: '#ede9fe', fg: '#5b21b6', dot: '#8b5cf6' },
+  'done':        { label: '完了',     bg: '#d1fae5', fg: '#064e3b', dot: '#0e9f6e' }
+};
+
+// ============================================================
+// State
+// ============================================================
+let customers = [];
+let currentId = null;
+let currentFilter = 'all';
+let editingChkIdx = null;
+let notesTimer = null;
+let nextActionTimer = null;
+
+// ============================================================
+// Storage
+// ============================================================
+let _storageOk = false;
+(function checkStorage() {
+  try { localStorage.setItem('_test','1'); localStorage.removeItem('_test'); _storageOk = true; }
+  catch(e) { _storageOk = false; }
+})();
+
+function save() {
+  if (!_storageOk) {
+    // data:URL等でlocalStorageが使えない場合は警告を一度だけ表示
+    if (!save._warned) {
+      save._warned = true;
+      alert('⚠ データを保存できません。\n\nこのファイルはdata:URLとして開かれています。\nWindowsエクスプローラーでindex.htmlをダブルクリックしてブラウザで直接開いてください。\n\n（file:// として開けばデータが保存されます）');
+    }
+    return;
+  }
+  localStorage.setItem('renewal-customers', JSON.stringify(customers));
+}
+function load() {
+  if (!_storageOk) { customers = []; return; }
+  try { customers = JSON.parse(localStorage.getItem('renewal-customers') || '[]'); }
+  catch { customers = []; }
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+function fmtDT(s) {
+  if (!s) return '-';
+  return new Date(s).toLocaleDateString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+function fmtMonth(ym) {
+  if (!ym) return '-';
+  const [y, m] = ym.split('-');
+  return `${y}年${parseInt(m)}月`;
+}
+
+function fmtRenewalDate(ymd) {
+  if (!ymd) return '-';
+  const [y, m, d] = ymd.split('-');
+  return `${y}年${parseInt(m)}月${parseInt(d)}日`;
+}
+
+// 更新日までの残り日数（負=過去）
+function daysUntil(ymd) {
+  if (!ymd) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(ymd + 'T00:00:00');
+  return Math.round((target - today) / 86400000);
+}
+
+// 残り日数に応じた色クラスを返す
+function renewalUrgencyStyle(ymd) {
+  const d = daysUntil(ymd);
+  if (d === null) return '';
+  if (d < 0)  return 'color:#9b1c1c;font-weight:700;'; // 過去
+  if (d <= 7)  return 'color:#c81e1e;font-weight:700;';
+  if (d <= 30) return 'color:#e3a008;font-weight:600;';
+  return 'color:var(--gray-500);';
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// Status
+// ============================================================
+function calcStatus(c) {
+  if (c.manualStatus) return c.manualStatus;
+  // manualStatus未設定の場合のみ自動判定（後方互換）
+  if (!c.checklist || c.checklist.length === 0) return 'not-started';
+  const done = c.checklist.filter(i => i.checked).length;
+  if (done === 0) return 'not-started';
+  if (done === c.checklist.length) return 'done';
+  return 'in-progress';
+}
+
+function setStatus(val) {
+  const c = getC();
+  if (!c) return;
+  const old = calcStatus(c);
+  c.manualStatus = val;
+  if (old !== val) {
+    c.history.push({ id: uid(), date: new Date().toISOString(),
+      content: 'ステータス変更：' + STATUS_DEF[old].label + ' → ' + STATUS_DEF[val].label });
+  }
+  c.updatedAt = new Date().toISOString();
+  save();
+  renderDetail();
+  renderStats();
+  renderList();
+}
+
+// ============================================================
+// Export / Import
+// ============================================================
+async function exportData() {
+  const now = new Date();
+  const dateStr = now.getFullYear() + '-' +
+    String(now.getMonth()+1).padStart(2,'0') + '-' +
+    String(now.getDate()).padStart(2,'0');
+  const fileName = 'renewal_backup_' + dateStr + '.json';
+  const json = JSON.stringify({ version: 1, data: customers }, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+
+  // showSaveFilePicker 対応ブラウザ（Edge/Chrome）は保存ダイアログを開く
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [{ description: 'JSONバックアップ', accept: { 'application/json': ['.json'] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      alert('バックアップを保存しました。\n保存先フォルダ：選択した場所');
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return; // キャンセル
+      // 失敗したら従来方式にフォールバック
+    }
+  }
+
+  // フォールバック：通常ダウンロード
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName;
+  a.click();
+}
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const obj = JSON.parse(e.target.result);
+      customers = obj.data || obj;
+      save();
+      renderAll();
+      alert('復元しました。');
+    } catch { alert('ファイルの形式が正しくありません。'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ============================================================
+// ビジ総・業災：提出締め切り（更新月の前月10日）
+// ============================================================
+var EARLY_SUBMIT_CATS = { bizso: true, gyosai: true };
+
+function getEffectiveDeadline(c) {
+  // ビジ総・業災は提出締め切り日（更新月前月10日）を実質的な期限とする
+  if (EARLY_SUBMIT_CATS[c.category] && c.renewalDate) {
+    var d = new Date(c.renewalDate + 'T00:00:00');
+    d.setDate(1);
+    d.setMonth(d.getMonth() - 1);
+    d.setDate(10);
+    return toDateStr(d);
+  }
+  return c.renewalDate || null;
+}
+
+function getSubmitDeadline(c) {
+  // ビジ総・業災のみ提出締め切りを返す（それ以外はnull）
+  if (!EARLY_SUBMIT_CATS[c.category] || !c.renewalDate) return null;
+  var d = new Date(c.renewalDate + 'T00:00:00');
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  d.setDate(10);
+  return toDateStr(d);
+}
+
+function fmtSubmitDeadline(c) {
+  var sd = getSubmitDeadline(c);
+  if (!sd) return '';
+  return '提出締切 ' + fmtRenewalDate(sd);
+}
+
+// ============================================================
+// Stats
+// ============================================================
+function renderStats() {
+  const total = customers.length;
+  const ns = customers.filter(c => calcStatus(c) === 'not-started').length;
+  const ip = customers.filter(c => calcStatus(c) === 'in-progress').length;
+  const wt = customers.filter(c => calcStatus(c) === 'waiting').length;
+  const dn = customers.filter(c => calcStatus(c) === 'done').length;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--primary);">${total}</div>
+      <div class="stat-label">総件数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--gray-500);">${ns}</div>
+      <div class="stat-label">未着手</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--warning);">${ip}</div>
+      <div class="stat-label">対応中</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#8b5cf6;">${wt}</div>
+      <div class="stat-label">相手待ち</div>
+    </div>
+  `;
+}
+
+// ============================================================
+// Month filter dropdown
+// ============================================================
+function buildMonthOptions() {
+  const months = [...new Set(customers.map(c => c.renewalMonth))].sort();
+  const sel = document.getElementById('monthFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">全月表示</option>' +
+    months.map(m => `<option value="${m}" ${m===cur?'selected':''}>${fmtMonth(m)}</option>`).join('');
+}
+
+// ============================================================
+// List
+// ============================================================
+function setFilter(btn) {
+  currentFilter = btn.dataset.filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+function renderList() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const monthSel = document.getElementById('monthFilter').value;
+
+  let list = customers.filter(c => {
+    const st = calcStatus(c);
+    const matchF = currentFilter === 'all' ? true : st === currentFilter;
+    const matchQ = !q || c.name.toLowerCase().includes(q);
+    const matchM = monthSel === 'all' || c.renewalMonth === monthSel;
+    return matchF && matchQ && matchM;
+  });
+
+  // グループ化（月別）、月内は更新日順
+  const groups = {};
+  list.forEach(c => {
+    if (!groups[c.renewalMonth]) groups[c.renewalMonth] = [];
+    groups[c.renewalMonth].push(c);
+  });
+  Object.values(groups).forEach(arr => arr.sort((a,b) => (a.renewalDate||'').localeCompare(b.renewalDate||'')));
+
+  const sortedMonths = Object.keys(groups).sort();
+  const el = document.getElementById('mainList');
+
+  if (sortedMonths.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div style="font-size:48px;">&#128203;</div><div>表示するデータがありません</div><div style="font-size:13px;color:var(--gray-400);">「一括登録」または「1件登録」からお客様を追加してください</div></div>`;
+    return;
+  }
+
+  el.innerHTML = sortedMonths.map(month => {
+    const items = groups[month];
+    const doneCount = items.filter(c => calcStatus(c) === 'done').length;
+    const pct = Math.round(doneCount / items.length * 100);
+
+    // 名前でグループ化（同名を束ねる）、月内は名前→更新日順
+    const sorted = [...items].sort((a, b) => {
+      const n = a.name.localeCompare(b.name, 'ja');
+      if (n !== 0) return n;
+      return (a.renewalDate || '').localeCompare(b.renewalDate || '');
+    });
+
+    // 連続する同名をグループにまとめる
+    const nameGroups = [];
+    sorted.forEach(c => {
+      const last = nameGroups[nameGroups.length - 1];
+      if (last && last[0].name === c.name) {
+        last.push(c);
+      } else {
+        nameGroups.push([c]);
+      }
+    });
+
+    const cardsHtml = nameGroups.map(group => {
+      if (group.length === 1) {
+        return buildCard(group[0], false);
+      }
+      // 同名複数：グループラッパー
+      return `
+        <div class="name-group">
+          <div class="name-group-header">
+            &#128101; ${esc(group[0].name)} 様
+            <span class="ng-count">（${group.length}件の更新）</span>
+          </div>
+          ${group.map(c => buildCard(c, true)).join('')}
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="month-group">
+        <div class="month-header">
+          <span class="month-header-label">&#128197; ${fmtMonth(month)} 更新</span>
+          <span class="month-header-count">${items.length}件</span>
+          <span class="month-header-progress">完了 ${doneCount}/${items.length}件 (${pct}%)</span>
+        </div>
+        <div class="customer-list">
+          ${cardsHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function buildCard(c, grouped = false) {
+  const st = calcStatus(c);
+  const stDef = STATUS_DEF[st];
+  const total = c.checklist ? c.checklist.length : 0;
+  const done  = c.checklist ? c.checklist.filter(i => i.checked).length : 0;
+  const pct   = total > 0 ? Math.round(done / total * 100) : 0;
+  const catBadge = CAT_BADGE[c.category] || '';
+  const isDone = st === 'done';
+  const effDeadline = getEffectiveDeadline(c);
+  const submitDeadline = getSubmitDeadline(c);
+  const d = daysUntil(effDeadline);
+  const urgStyle = renewalUrgencyStyle(effDeadline);
+  const urgLabel = d === null ? '' : d < 0 ? `（${Math.abs(d)}日超過）` : d === 0 ? '（本日！）' : `（あと${d}日）`;
+  const submitBadge = submitDeadline ? `<span style="background:#fce7f3;color:#9d174d;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;">提出締切 ${fmtRenewalDate(submitDeadline)}</span>` : '';
+  const renewalSpan = c.renewalDate ? `<span style="${urgStyle}">&#128197; ${fmtRenewalDate(c.renewalDate)} ${urgLabel}</span>` : '';
+  return `
+    <div class="customer-card ${isDone?'done':''}" onclick="openDetail('${c.id}')">
+      <div class="status-dot" style="background:${stDef.dot};"></div>
+      <div class="customer-main">
+        ${grouped
+          ? `<div class="customer-meta" style="margin-bottom:2px;">
+               <span class="badge ${catBadge}">${CAT_LABEL[c.category]||'-'}</span>
+               <span class="badge" style="background:${stDef.bg};color:${stDef.fg};">${stDef.label}</span>
+               ${submitBadge}
+               ${renewalSpan}
+               ${c.memo ? `<span style="color:var(--gray-400);">&#128221; ${esc(c.memo)}</span>` : ''}
+             </div>`
+          : `<h3>${esc(c.name)} 様</h3>
+             <div class="customer-meta">
+               <span class="badge ${catBadge}">${CAT_LABEL[c.category]||'-'}</span>
+               <span class="badge" style="background:${stDef.bg};color:${stDef.fg};">${stDef.label}</span>
+               ${submitBadge}
+               ${renewalSpan}
+               ${c.memo ? `<span style="color:var(--gray-400);">&#128221; ${esc(c.memo)}</span>` : ''}
+             </div>`
+        }
+      </div>
+      <div class="progress-col">
+        <div>${done}/${total}</div>
+        <div class="progress-bar-wrap"><div class="progress-bar ${isDone?'full':''}" style="width:${pct}%;"></div></div>
+        <div>${pct}%</div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// Batch registration
+// ============================================================
+let batchRowCount = 0;
+
+function openBatch() {
+  // 今月を初期値に
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('b-month').value = ym;
+  // テーブルをリセット
+  document.getElementById('batchBody').innerHTML = '';
+  batchRowCount = 0;
+  for (let i = 0; i < 15; i++) addBatchRow();
+  show('modalBatch');
+  setTimeout(function() {
+    var first = document.getElementById('bn-1');
+    if (first) first.focus();
+  }, 50);
+}
+
+function batchMonthChanged() {
+  // 月が変わったら各行の日付入力の min/max を更新（任意）
+}
+
+function addBatchRow() {
+  batchRowCount++;
+  const idx = batchRowCount;
+  const tr = document.createElement('tr');
+  tr.id = `brow-${idx}`;
+  tr.innerHTML = `
+    <td style="text-align:center;color:var(--gray-400);font-size:13px;">${idx}</td>
+    <td><input type="text" placeholder="山田 太郎" id="bn-${idx}" onkeydown="batchKeydown(event,${idx},'name')"></td>
+    <td><input type="number" min="1" max="31" placeholder="例: 15" id="bd-${idx}" style="width:100%;text-align:center;" onkeydown="batchKeydown(event,${idx},'day')"></td>
+    <td>
+      <select id="bc-${idx}">
+        <option value="auto">自動車</option>
+        <option value="auto_corp">自動車（法人）</option>
+        <option value="fleet">フリート</option>
+        <option value="fire">火災</option>
+        <option value="kigsogo">企業総合</option>
+        <option value="shakuya">借家人賠償</option>
+        <option value="bizmas">ビジマス</option>
+        <option value="bizso">ビジ総</option>
+        <option value="gyosai">業災</option>
+        <option value="kigai">傷害</option>
+        <option value="golf">ゴルフ</option>
+        <option value="other">その他</option>
+      </select>
+    </td>
+    <td><input type="text" placeholder="特記事項など" id="bm-${idx}" onkeydown="batchKeydown(event,${idx},'memo')"></td>
+    <td><button class="btn-del-row" onclick="delBatchRow(${idx})" title="削除">&#215;</button></td>
+  `;
+  document.getElementById('batchBody').appendChild(tr);
+  setTimeout(() => { const el = document.getElementById(`bn-${idx}`); if(el) el.focus(); }, 50);
+}
+
+function delBatchRow(idx) {
+  const tr = document.getElementById(`brow-${idx}`);
+  if (tr) tr.remove();
+}
+
+function batchKeydown(e, idx, field) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    // 次の行がなければ追加
+    const body = document.getElementById('batchBody');
+    const rows = body.querySelectorAll('tr');
+    const lastRowId = parseInt(rows[rows.length-1].id.replace('brow-',''));
+    if (idx === lastRowId) {
+      addBatchRow();
+    } else {
+      // 次の行の名前欄へ
+      const next = document.getElementById(`bn-${idx+1}`);
+      if (next) next.focus();
+    }
+  }
+  if (e.key === 'Tab' && field === 'memo') {
+    // memoでTabを押したら次の行の名前欄へ
+    const body = document.getElementById('batchBody');
+    const rows = body.querySelectorAll('tr');
+    const lastRowId = parseInt(rows[rows.length-1].id.replace('brow-',''));
+    if (idx === lastRowId) {
+      e.preventDefault();
+      addBatchRow();
+    }
+  }
+}
+
+function saveBatch() {
+  try {
+    const month = document.getElementById('b-month').value;
+    if (!month) { alert('更新月を選択してください。'); return; }
+
+    const body = document.getElementById('batchBody');
+    const rows = body.querySelectorAll('tr');
+    let count = 0;
+    const now = new Date().toISOString();
+    const errors = [];
+
+    rows.forEach(tr => {
+      const idx = tr.id.replace('brow-','');
+      const name = (document.getElementById('bn-' + idx) ? document.getElementById('bn-' + idx).value : '').trim();
+      if (!name) return;
+      const dayVal = document.getElementById('bd-' + idx) ? document.getElementById('bd-' + idx).value : '';
+      const cat  = (document.getElementById('bc-' + idx) ? document.getElementById('bc-' + idx).value : '') || 'auto';
+      const memo = (document.getElementById('bm-' + idx) ? document.getElementById('bm-' + idx).value : '').trim();
+
+      const day = parseInt(dayVal);
+      if (!dayVal || isNaN(day) || day < 1 || day > 31) {
+        errors.push(name + '（日にち未入力のためスキップ）');
+        return;
+      }
+      const renewalDate = month + '-' + String(day).padStart(2,'0');
+
+      const tmpl = CHECKLISTS[cat] || CHECKLISTS['auto'];
+      const checklist = tmpl.map(function(item, i) {
+        return { id: uid() + i, label: item.label, step: item.step, checked: false, completedAt: null };
+      });
+
+      customers.push({
+        id: uid(), name: name,
+        renewalMonth: month,
+        renewalDate: renewalDate,
+        category: cat, memo: memo, checklist: checklist,
+        notes: '', nextAction: '',
+        history: [{ id: uid(), date: now, content: '登録：' + (CAT_LABEL[cat]||cat) + ' 更新 / 更新日 ' + fmtRenewalDate(renewalDate) }],
+        createdAt: now, updatedAt: now
+      });
+      count++;
+    });
+
+    if (count === 0) { alert('登録できる行がありません。\nお客様名と更新日（日）を入力してください。'); return; }
+    save();
+    closeModal('modalBatch');
+    renderAll();
+    alert(count + '件を登録しました。');
+  } catch(e) {
+    alert('一括登録エラー: ' + e.message + '\n' + e.stack);
+    console.error('saveBatch error:', e);
+  }
+}
+
+// ============================================================
+// Single registration
+// ============================================================
+function openSingle() {
+  // 来月の1日をデフォルトに
+  const now = new Date();
+  now.setMonth(now.getMonth() + 1);
+  now.setDate(1);
+  const ymd = now.toISOString().split('T')[0];
+  document.getElementById('s-name').value = '';
+  document.getElementById('s-date').value = ymd;
+  document.getElementById('s-category').value = '';
+  document.getElementById('s-memo').value = '';
+  show('modalSingle');
+}
+
+function saveSingle() {
+  try {
+    const name = document.getElementById('s-name').value.trim();
+    const renewalDate = document.getElementById('s-date').value;
+    const cat = document.getElementById('s-category').value || 'auto';
+    const memo = document.getElementById('s-memo').value.trim();
+    if (!name) { alert('お客様名を入力してください。'); return; }
+    if (!renewalDate) { alert('更新日を入力してください。'); return; }
+
+    const renewalMonth = renewalDate.slice(0, 7);
+    const now = new Date().toISOString();
+    const tmpl = CHECKLISTS[cat] || CHECKLISTS['auto'];
+    const checklist = tmpl.map(function(item, i) {
+      return { id: uid() + i, label: item.label, step: item.step, checked: false, completedAt: null };
+    });
+
+    customers.push({
+      id: uid(), name: name, renewalMonth: renewalMonth, renewalDate: renewalDate, category: cat, memo: memo,
+      checklist: checklist, notes: '', nextAction: '',
+      history: [{ id: uid(), date: now, content: '登録：' + (CAT_LABEL[cat]||cat) + ' 更新 / 更新日 ' + fmtRenewalDate(renewalDate) }],
+      createdAt: now, updatedAt: now
+    });
+    save();
+    closeModal('modalSingle');
+    renderAll();
+    alert('登録しました。');
+  } catch(e) {
+    alert('1件登録エラー: ' + e.message + '\n' + e.stack);
+    console.error('saveSingle error:', e);
+  }
+}
+
+// ============================================================
+// Detail Modal
+// ============================================================
+function openDetail(id) {
+  currentId = id;
+  editingChkIdx = null;
+  renderDetail();
+  show('modalDetail');
+}
+
+function getC() { return customers.find(c => c.id === currentId); }
+
+function renderDetail() {
+  const c = getC();
+  if (!c) return;
+  const st = calcStatus(c);
+  const stDef = STATUS_DEF[st];
+
+  document.getElementById('d-title').textContent = c.name + ' 様';
+  const dLeft = daysUntil(c.renewalDate);
+  const dLabel = dLeft === null ? '' : dLeft < 0 ? `（${Math.abs(dLeft)}日超過）` : dLeft === 0 ? '（本日！）' : `（あと${dLeft}日）`;
+  document.getElementById('d-subtitle').textContent =
+    `更新日 ${fmtRenewalDate(c.renewalDate)} ${dLabel} ／ ${CAT_LABEL[c.category]||'-'}`;
+
+  // Status selector（手動選択）
+  const statusBtns = Object.entries(STATUS_DEF).map(([key, def]) => {
+    const active = st === key;
+    return `<button onclick="setStatus('${key}')" style="
+      padding:8px 16px; border-radius:6px; border:2px solid ${active ? def.dot : 'var(--gray-200)'};
+      background:${active ? def.bg : 'white'}; color:${active ? def.fg : 'var(--gray-500)'};
+      font-weight:${active ? '700' : '400'}; font-size:13px; cursor:pointer; font-family:inherit;
+      transition:all 0.15s; display:inline-flex; align-items:center; gap:6px;">
+      <span style="width:10px;height:10px;border-radius:50%;background:${active ? def.dot : 'var(--gray-300)'}; display:inline-block;"></span>
+      ${def.label}
+    </button>`;
+  }).join('');
+  document.getElementById('d-status-row').innerHTML = `
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      ${statusBtns}
+    </div>
+  `;
+
+  // Customer info
+  document.getElementById('d-customer').innerHTML = `
+    <div class="info-item"><label>お客様名</label><span>${esc(c.name)} 様</span></div>
+    <div class="info-item"><label>更新日</label><span style="${renewalUrgencyStyle(getEffectiveDeadline(c))}">${fmtRenewalDate(c.renewalDate)}${getSubmitDeadline(c) ? '　<span style="background:#fce7f3;color:#9d174d;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;">提出締切 ' + fmtRenewalDate(getSubmitDeadline(c)) + '</span>' : ''}</span></div>
+    <div class="info-item"><label>保険種別</label><span>${CAT_LABEL[c.category]||'-'}</span></div>
+    <div class="info-item"><label>登録日</label><span>${fmtDT(c.createdAt)}</span></div>
+    ${c.memo ? `<div class="info-item" style="grid-column:1/-1;"><label>メモ</label><span>${esc(c.memo)}</span></div>` : ''}
+  `;
+
+  // Notes
+  document.getElementById('d-notes').value = c.notes || '';
+
+  // Checklist
+  renderChecklist(c);
+
+  // History
+  renderHistory(c);
+
+  // Next action
+  document.getElementById('d-next-action').value = c.nextAction || '';
+}
+
+function renderChecklist(c) {
+  const list = c.checklist || [];
+  const done = list.filter(i => i.checked).length;
+  const pct  = list.length > 0 ? Math.round(done / list.length * 100) : 0;
+
+  document.getElementById('d-chk-label').textContent = `進捗 ${done}/${list.length} 完了`;
+  const bar = document.getElementById('d-chk-bar');
+  bar.style.width = pct + '%';
+  bar.className = 'progress-bar' + (pct === 100 ? ' full' : '');
+
+  // ステップごとにグループ化して表示
+  const stepLabels = { 1: '① 資料作成', 2: '② お客様に資料提供', 3: '③ 更新手続き電話' };
+  let html = '';
+  let lastStep = null;
+
+  list.forEach((item, idx) => {
+    const step = item.step || 0;
+    if (step !== lastStep) {
+      const label = stepLabels[step] || 'その他';
+      html += `<div class="chk-section"><span>${label}</span><span class="chk-section-line"></span></div>`;
+      lastStep = step;
+    }
+
+    if (editingChkIdx === idx) {
+      html += `
+        <div class="checklist-item">
+          <input type="checkbox" ${item.checked?'checked':''} disabled style="opacity:0.4;">
+          <input type="text" class="form-control" id="chk-edit-input" value="${esc(item.label)}"
+            style="flex:1;" onkeydown="if(event.key==='Enter')saveChkEdit(${idx}); if(event.key==='Escape')cancelChkEdit();">
+          <button class="chk-btn" onclick="saveChkEdit(${idx})" title="保存">&#10003;</button>
+          <button class="chk-btn" onclick="cancelChkEdit()" title="キャンセル">&#10005;</button>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="checklist-item ${item.checked?'done':''}">
+          <input type="checkbox" ${item.checked?'checked':''} onchange="toggleCheck(${idx})">
+          <label class="chk-label" onclick="toggleCheck(${idx})">${esc(item.label)}</label>
+          ${item.completedAt ? `<span class="chk-date">${fmtDT(item.completedAt)}</span>` : ''}
+          <div class="chk-actions">
+            <button class="chk-btn" onclick="editChkItem(${idx})" title="編集">&#9998;</button>
+            <button class="chk-btn del" onclick="delChkItem(${idx})" title="削除">&#128465;</button>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  document.getElementById('d-checklist').innerHTML = html;
+
+  if (editingChkIdx !== null) {
+    setTimeout(() => {
+      const el = document.getElementById('chk-edit-input');
+      if (el) { el.focus(); el.select(); }
+    }, 30);
+  }
+}
+
+function toggleCheck(idx) {
+  const c = getC();
+  if (!c) return;
+  c.checklist[idx].checked = !c.checklist[idx].checked;
+  c.checklist[idx].completedAt = c.checklist[idx].checked ? new Date().toISOString() : null;
+  if (c.checklist[idx].checked) {
+    c.history.push({ id: uid(), date: new Date().toISOString(), content: `完了：${c.checklist[idx].label}` });
+  }
+  c.updatedAt = new Date().toISOString();
+  save();
+  renderChecklist(c);
+  renderStats();
+  renderList();
+}
+
+function editChkItem(idx) { editingChkIdx = idx; renderChecklist(getC()); }
+function cancelChkEdit() { editingChkIdx = null; renderChecklist(getC()); }
+function saveChkEdit(idx) {
+  const c = getC();
+  const val = (document.getElementById('chk-edit-input')?.value || '').trim();
+  if (!val) return;
+  c.checklist[idx].label = val;
+  editingChkIdx = null;
+  c.updatedAt = new Date().toISOString();
+  save();
+  renderChecklist(c);
+}
+function delChkItem(idx) {
+  const c = getC();
+  c.checklist.splice(idx, 1);
+  c.updatedAt = new Date().toISOString();
+  save();
+  renderChecklist(c);
+}
+function addCheckItem() {
+  const c = getC();
+  const val = (document.getElementById('chk-new-text')?.value || '').trim();
+  if (!val) return;
+  c.checklist.push({ id: uid(), label: val, step: 0, checked: false, completedAt: null });
+  document.getElementById('chk-new-text').value = '';
+  c.updatedAt = new Date().toISOString();
+  save();
+  renderChecklist(c);
+}
+
+
+function saveNotes() {
+  clearTimeout(notesTimer);
+  notesTimer = setTimeout(() => {
+    const c = getC();
+    if (!c) return;
+    c.notes = document.getElementById('d-notes').value;
+    c.updatedAt = new Date().toISOString();
+    save();
+  }, 600);
+}
+
+function saveNextAction() {
+  clearTimeout(nextActionTimer);
+  nextActionTimer = setTimeout(() => {
+    const c = getC();
+    if (!c) return;
+    c.nextAction = document.getElementById('d-next-action').value;
+    c.updatedAt = new Date().toISOString();
+    save();
+  }, 600);
+}
+
+// ============================================================
+// History
+// ============================================================
+function renderHistory(c) {
+  const hist = (c.history || []).slice().reverse();
+  if (hist.length === 0) {
+    document.getElementById('d-history').innerHTML = '<p style="color:var(--gray-400);font-size:13px;">対応履歴はありません。</p>';
+    return;
+  }
+  document.getElementById('d-history').innerHTML = `
+    <div class="history-list">
+      ${hist.map(h => `
+        <div class="history-entry">
+          <div class="history-dot"></div>
+          <div class="history-time">${fmtDT(h.date)}</div>
+          <div class="history-text">${esc(h.content)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function addHistory() {
+  const c = getC();
+  const val = (document.getElementById('d-new-hist')?.value || '').trim();
+  if (!val) return;
+  c.history.push({ id: uid(), date: new Date().toISOString(), content: val });
+  document.getElementById('d-new-hist').value = '';
+  c.updatedAt = new Date().toISOString();
+  save();
+  renderHistory(c);
+}
+
+// ============================================================
+// Edit
+// ============================================================
+function openEdit() {
+  const c = getC();
+  if (!c) return;
+  document.getElementById('e-name').value = c.name;
+  document.getElementById('e-date').value = c.renewalDate || c.renewalMonth + '-01';
+  document.getElementById('e-category').value = c.category;
+  document.getElementById('e-memo').value = c.memo || '';
+  show('modalEdit');
+}
+
+function saveEdit() {
+  const c = getC();
+  if (!c) return;
+  const name = document.getElementById('e-name').value.trim();
+  const renewalDate = document.getElementById('e-date').value;
+  const cat = document.getElementById('e-category').value;
+  const memo = document.getElementById('e-memo').value.trim();
+  if (!name || !renewalDate || !cat) { alert('必須項目を入力してください。'); return; }
+
+  const catChanged = c.category !== cat;
+  c.name = name;
+  c.renewalDate = renewalDate;
+  c.renewalMonth = renewalDate.slice(0, 7);
+  c.category = cat;
+  c.memo = memo;
+  if (catChanged) {
+    if (confirm('保険種別が変更されました。チェックリストを新しい種別のものにリセットしますか？\n（「キャンセル」を選ぶと既存のチェックリストを維持します）')) {
+      const tmpl = CHECKLISTS[cat] || CHECKLISTS.auto;
+      c.checklist = tmpl.map((item, i) => ({
+        id: uid() + i, label: item.label, step: item.step,
+        checked: false, completedAt: null
+      }));
+    }
+  }
+  c.updatedAt = new Date().toISOString();
+  save();
+  closeModal('modalEdit');
+  renderDetail();
+  renderAll();
+}
+
+// ============================================================
+// Delete
+// ============================================================
+function deleteCustomer() {
+  const c = getC();
+  if (!c) return;
+  if (!confirm(`「${c.name}」様を削除しますか？この操作は取り消せません。`)) return;
+  customers = customers.filter(x => x.id !== c.id);
+  save();
+  closeModal('modalDetail');
+  renderAll();
+}
+
+// ============================================================
+// Tabs
+// ============================================================
+function tab(name, el) {
+  document.querySelectorAll('#modalDetail .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#modalDetail .tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tc-' + name).classList.add('active');
+}
+
+// ============================================================
+// Modal helpers
+// ============================================================
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.add('hidden');
+  });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => m.classList.add('hidden'));
+  }
+});
+
+// ============================================================
+// View switching
+// ============================================================
+let currentView = 'list';
+
+function switchView(view) {
+  currentView = view;
+  document.getElementById('vtab-list').classList.toggle('active', view === 'list');
+  document.getElementById('vtab-tasks').classList.toggle('active', view === 'tasks');
+  document.getElementById('listView').classList.toggle('hidden', view !== 'list');
+  document.getElementById('listToolbar').classList.toggle('hidden', view !== 'list');
+  document.getElementById('taskView').classList.toggle('hidden', view !== 'tasks');
+  document.getElementById('taskToolbar').classList.toggle('hidden', view !== 'tasks');
+  if (view === 'tasks') renderTasks();
+}
+
+// ============================================================
+// Task generation
+// ============================================================
+// ローカル日付を "YYYY-MM-DD" で返す（toISOStringはUTCになるので使わない）
+function toDateStr(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+function isBusinessDay(d) { const w = d.getDay(); return w !== 0 && w !== 6; }
+
+function subtractCalDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() - n);
+  return toDateStr(d);
+}
+
+function subBusinessDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00');
+  let count = 0;
+  while (count < n) { d.setDate(d.getDate() - 1); if (isBusinessDay(d)) count++; }
+  return toDateStr(d);
+}
+
+// 資料提供を「1日5件・平日のみ」で日付割り当て（締め切りギリギリ優先）
+function scheduleDelivery(custList) {
+  const todayStr = toDateStr(new Date());
+  const dayCount = {};
+  const result = {};
+
+  // 締め切りが早い順に処理（タイトな顧客から割り当てる）
+  const sorted = [...custList].sort((a, b) => (a.deadline || '9999').localeCompare(b.deadline || '9999'));
+
+  sorted.forEach(function(item) {
+    if (!item.deadline) { result[item.id] = null; return; }
+
+    // 締め切り日から今日に向かって空き平日を探す（最遅優先）
+    var d = new Date(item.deadline + 'T00:00:00');
+    var startD = new Date(todayStr + 'T00:00:00');
+    var assigned = false;
+
+    while (d >= startD) {
+      if (isBusinessDay(d)) {
+        var ds = toDateStr(d);
+        if ((dayCount[ds] || 0) < 5) {
+          dayCount[ds] = (dayCount[ds] || 0) + 1;
+          result[item.id] = ds;
+          assigned = true;
+          break;
+        }
+      }
+      d.setDate(d.getDate() - 1);
+    }
+
+    if (!assigned) {
+      // 今日以前まで全部埋まっている場合は今日に追加
+      dayCount[todayStr] = (dayCount[todayStr] || 0) + 1;
+      result[item.id] = todayStr;
+    }
+  });
+
+  return result;
+}
+
+function generateTasks() {
+  var todayStr = toDateStr(new Date());
+  var active = customers.filter(function(c) { return calcStatus(c) !== 'done'; });
+
+  var custInfo = active.map(function(c) {
+    var cl = c.checklist || [];
+    var s1 = cl.filter(function(i) { return i.step === 1; });
+    var s2 = cl.filter(function(i) { return i.step === 2; });
+    var s3 = cl.filter(function(i) { return i.step === 3; });
+    var step1Done = s1.length === 0 || s1.every(function(i) { return i.checked; });
+    var step2Done = s2.length === 0 || s2.every(function(i) { return i.checked; });
+    var step3Done = s3.length === 0 || s3.every(function(i) { return i.checked; });
+    var currentStep = !step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : null;
+    // ビジ総・業災は提出締め切り日（更新月前月10日）を基準にスケジュール
+    var effDeadline = getEffectiveDeadline(c);
+    var deadline2 = effDeadline ? subtractCalDays(effDeadline, 60) : null;
+    return { c: c, step1Done: step1Done, step2Done: step2Done, step3Done: step3Done, currentStep: currentStep, deadline2: deadline2, effDeadline: effDeadline };
+  });
+
+  // 資料提供スケジュール（step2未完了の全顧客対象）
+  var needDelivery = custInfo.filter(function(x) { return !x.step2Done && x.effDeadline; });
+  var deliverySchedule = scheduleDelivery(needDelivery.map(function(x) { return { id: x.c.id, deadline: x.deadline2 }; }));
+
+  var tasks = [];
+
+  custInfo.forEach(function(x) {
+    if (x.currentStep === null) return;
+    var c = x.c;
+    var status = calcStatus(c);
+    var effDeadline = x.effDeadline;
+    var submitDeadline = getSubmitDeadline(c); // ビジ総・業災のみ非null
+
+    if (x.currentStep === 1) {
+      // 資料作成：資料提供予定日の2営業日前（過去になる場合は今日）
+      var delivDate = deliverySchedule[c.id];
+      var rawDue = delivDate ? subBusinessDays(delivDate, 2) : (effDeadline ? subtractCalDays(effDeadline, 62) : null);
+      var dueDate = rawDue && rawDue < todayStr ? todayStr : rawDue;
+      tasks.push({ customerId: c.id, customerName: c.name, category: c.category, renewalDate: c.renewalDate, submitDeadline: submitDeadline, taskType: 'prepare', taskLabel: '資料作成', dueDate: dueDate, status: status });
+    } else if (x.currentStep === 2) {
+      // 資料提供：スケジュール日（過去になる場合は今日）
+      var rawDue2 = deliverySchedule[c.id] || todayStr;
+      var dueDate2 = rawDue2 < todayStr ? todayStr : rawDue2;
+      tasks.push({ customerId: c.id, customerName: c.name, category: c.category, renewalDate: c.renewalDate, submitDeadline: submitDeadline, taskType: 'deliver', taskLabel: '資料提供', dueDate: dueDate2, status: status });
+    } else if (x.currentStep === 3) {
+      // 更新手続き電話：実質期限の50日前（ビジ総・業災は提出締め切り日の50日前）
+      var rawDue3 = effDeadline ? subtractCalDays(effDeadline, 50) : null;
+      var dueDate3 = rawDue3 && rawDue3 < todayStr ? todayStr : rawDue3;
+      tasks.push({ customerId: c.id, customerName: c.name, category: c.category, renewalDate: c.renewalDate, submitDeadline: submitDeadline, taskType: 'call', taskLabel: '更新手続き電話', dueDate: dueDate3, status: status });
+    }
+  });
+
+  tasks.sort(function(a, b) { return (a.dueDate || '9999').localeCompare(b.dueDate || '9999'); });
+  return tasks;
+}
+
+// ============================================================
+// Task rendering
+// ============================================================
+var DAY_JP = ['日','月','火','水','木','金','土'];
+
+function dueDateLabel(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr + 'T00:00:00');
+  var dayName = DAY_JP[d.getDay()];
+  var isSat = d.getDay() === 6, isSun = d.getDay() === 0;
+  var dayColor = isSun ? 'color:#dc2626;' : isSat ? 'color:#2563eb;' : '';
+  return fmtRenewalDate(dateStr) + '（<span style="' + dayColor + '">' + dayName + '</span>）';
+}
+
+function buildTaskCard(t) {
+  var stDef = STATUS_DEF[t.status] || STATUS_DEF['not-started'];
+  var typeClass = t.taskType === 'prepare' ? 'task-type-prepare' : t.taskType === 'deliver' ? 'task-type-deliver' : 'task-type-call';
+  var catBadge = CAT_BADGE[t.category] || '';
+  var duePart = t.dueDate
+    ? '<span style="font-size:12px;color:var(--gray-500);white-space:nowrap;">期限 ' + dueDateLabel(t.dueDate) + '</span>'
+    : '';
+  return '<div class="task-card" onclick="openDetail(\'' + t.customerId + '\')">' +
+    '<span class="task-type-badge ' + typeClass + '">' + t.taskLabel + '</span>' +
+    '<span class="task-customer">' + esc(t.customerName) + ' 様</span>' +
+    '<span class="badge ' + catBadge + '" style="flex-shrink:0;">' + (CAT_LABEL[t.category] || '-') + '</span>' +
+    duePart +
+    '<span class="task-renewal" style="' + renewalUrgencyStyle(t.renewalDate) + '">更新日 ' + fmtRenewalDate(t.renewalDate) + '</span>' +
+    '<span class="task-status-chip" style="background:' + stDef.bg + ';color:' + stDef.fg + ';">' +
+      '<span style="width:8px;height:8px;border-radius:50%;background:' + stDef.dot + ';display:inline-block;"></span>' + stDef.label +
+    '</span>' +
+  '</div>';
+}
+
+function renewalDaysLabel(ymd) {
+  var d = daysUntil(ymd);
+  if (d === null) return '';
+  if (d < 0)  return '（' + Math.abs(d) + '日超過）';
+  if (d === 0) return '（本日！）';
+  return '（あと' + d + '日）';
+}
+
+// 更新日までの残り日数でカードの左ボーダー色を決定
+function renewalUrgencyBorder(renewalDate, todayStr) {
+  if (!renewalDate) return '#d1d5db';
+  if (renewalDate < todayStr) return '#f87171';
+  var diff = Math.round((new Date(renewalDate + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000);
+  if (diff <= 10) return '#f87171';
+  if (diff <= 20) return '#fb923c';
+  if (diff <= 30) return '#facc15';
+  return '#d1d5db';
+}
+
+function renderTasks() {
+  if (currentView !== 'tasks') return;
+  var tasks = generateTasks();
+  var todayStr = toDateStr(new Date());
+  var tomorrowStr = toDateStr(new Date(new Date(todayStr + 'T00:00:00').setDate(new Date(todayStr + 'T00:00:00').getDate() + 1)));
+  var el = document.getElementById('taskList');
+
+  if (tasks.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div style="font-size:48px;">&#9989;</div><div>対応待ちのタスクはありません</div><div style="font-size:13px;color:var(--gray-400);">完了以外のお客様がある場合、自動でタスクが生成されます</div></div>';
+    return;
+  }
+
+  // dueDate でグループ化
+  // 「期限切れ」は更新日そのものが過去の場合のみ（中間期限超過は「今日」扱い）
+  var overdue = [];
+  var groupMap = {};
+  tasks.forEach(function(t) {
+    if (t.renewalDate && t.renewalDate < todayStr) {
+      overdue.push(t); // 更新日が過去 → 真の期限切れ
+    } else {
+      var key = (!t.dueDate || t.dueDate < todayStr) ? todayStr : t.dueDate;
+      if (!groupMap[key]) groupMap[key] = [];
+      groupMap[key].push(t);
+    }
+  });
+
+  var DAY_JP = ['日','月','火','水','木','金','土'];
+  var html = '';
+
+  function buildGroup(heading, items, type) {
+    if (!items || items.length === 0) return '';
+    var headerStyle = type === 'overdue'
+      ? 'color:#991b1b; border-bottom:2px solid #f87171;'
+      : type === 'today'
+        ? 'color:var(--primary); border-bottom:2px solid var(--primary);'
+        : 'color:var(--gray-700); border-bottom:2px solid var(--gray-300);';
+    return '<div class="task-date-group">' +
+      '<div class="task-date-header" style="' + headerStyle + '">' +
+        heading + '<span class="task-count" style="font-size:12px;font-weight:normal;color:var(--gray-400);margin-left:8px;">' + items.length + '件</span>' +
+      '</div>' +
+      items.map(function(t) { return buildTaskCard(t, type, todayStr); }).join('') +
+    '</div>';
+  }
+
+  if (overdue.length > 0) {
+    html += buildGroup('&#128308; 期限切れ', overdue, 'overdue');
+  }
+
+  Object.keys(groupMap).sort().forEach(function(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00');
+    var dayName = DAY_JP[d.getDay()];
+    var isSat = d.getDay() === 6, isSun = d.getDay() === 0;
+    var dayColor = isSun ? '#dc2626' : isSat ? '#2563eb' : '';
+    var daySpan = dayColor ? '<span style="color:' + dayColor + ';">' + dayName + '</span>' : dayName;
+    var heading = dateStr === todayStr
+      ? '&#128205; 今日（' + daySpan + '）' + fmtRenewalDate(dateStr)
+      : dateStr === tomorrowStr
+        ? '&#128338; 明日（' + daySpan + '）' + fmtRenewalDate(dateStr)
+        : '&#128197; ' + fmtRenewalDate(dateStr) + '（' + daySpan + '）';
+    var type = dateStr === todayStr ? 'today' : 'future';
+    html += buildGroup(heading, groupMap[dateStr], type);
+  });
+
+  el.innerHTML = html;
+}
+
+function buildTaskCard(t, type, todayStr) {
+  var stDef = STATUS_DEF[t.status] || STATUS_DEF['not-started'];
+  var typeClass = t.taskType === 'prepare' ? 'task-type-prepare' : t.taskType === 'deliver' ? 'task-type-deliver' : 'task-type-call';
+  var catBadge = CAT_BADGE[t.category] || '';
+  var borderColor = renewalUrgencyBorder(t.renewalDate, todayStr || toDateStr(new Date()));
+  var cardClass = type === 'overdue' ? 'overdue' : type === 'today' ? 'today' : '';
+
+  return '<div class="task-card ' + cardClass + '" style="border-left:4px solid ' + borderColor + ';" onclick="openDetail(\'' + t.customerId + '\')">' +
+    '<div class="status-dot" style="background:' + stDef.dot + ';width:10px;height:10px;border-radius:50%;flex-shrink:0;"></div>' +
+    '<div class="task-info">' +
+      '<div class="task-name">' + esc(t.customerName) + ' 様</div>' +
+      '<div class="task-detail">' +
+        '<span class="task-type-badge ' + typeClass + '">' + t.taskLabel + '</span>' +
+        '<span class="badge ' + catBadge + '">' + (CAT_LABEL[t.category] || '-') + '</span>' +
+        '<span class="task-status-chip" style="background:' + stDef.bg + ';color:' + stDef.fg + ';">' +
+          '<span style="width:7px;height:7px;border-radius:50%;background:' + stDef.dot + ';display:inline-block;"></span>' + stDef.label +
+        '</span>' +
+        (t.submitDeadline
+          ? '<span style="background:#fce7f3;color:#9d174d;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap;">提出締切 ' + fmtRenewalDate(t.submitDeadline) + renewalDaysLabel(t.submitDeadline) + '</span>' +
+            '<span style="color:var(--gray-400);font-size:12px;white-space:nowrap;">更新日 ' + fmtRenewalDate(t.renewalDate) + '</span>'
+          : '<span style="' + renewalUrgencyStyle(t.renewalDate) + ';font-size:12px;white-space:nowrap;">更新日 ' + fmtRenewalDate(t.renewalDate) + renewalDaysLabel(t.renewalDate) + '</span>'
+        ) +
+      '</div>' +
+    '</div>' +
+    '<button class="task-done-btn" onclick="completeTaskStep(\'' + t.customerId + '\',\'' + t.taskType + '\',event)">&#10003; 完了</button>' +
+  '</div>';
+}
+
+function downloadTodayTasks() {
+  var todayStr = toDateStr(new Date());
+  var tasks = generateTasks();
+
+  // 今日のタスク（dueDate === todayStr）を抽出
+  var todayTasks = tasks.filter(function(t) {
+    return t.dueDate === todayStr;
+  });
+
+  // 日付ヘッダー
+  var d = new Date(todayStr + 'T00:00:00');
+  var DAY = ['日','月','火','水','木','金','土'];
+  var dateLabel = d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日（' + DAY[d.getDay()] + '）';
+
+  var lines = [];
+  lines.push('■ 今日のタスク　' + dateLabel);
+  lines.push('');
+
+  if (todayTasks.length === 0) {
+    lines.push('　本日対応のタスクはありません。');
+  } else {
+    todayTasks.forEach(function(t, i) {
+      var renewal = t.submitDeadline
+        ? '提出締切 ' + fmtRenewalDate(t.submitDeadline)
+        : '更新日 ' + fmtRenewalDate(t.renewalDate) + renewalDaysLabel(t.renewalDate);
+      lines.push('・' + t.customerName + ' 様　' + t.taskLabel + '　' + (CAT_LABEL[t.category] || '') + '　' + renewal);
+    });
+  }
+
+  lines.push('');
+  lines.push('---');
+  lines.push('出力日時：' + new Date().toLocaleString('ja-JP'));
+
+  var text = lines.join('\r\n');
+  var blob = new Blob(['﻿' + text], { type: 'text/plain;charset=utf-8' }); // BOM付きUTF-8でメモ帳対応
+
+  // 保存ダイアログ
+  var fileName = 'tasks_' + todayStr + '.txt';
+  if (window.showSaveFilePicker) {
+    window.showSaveFilePicker({
+      suggestedName: fileName,
+      types: [{ description: 'テキストファイル', accept: { 'text/plain': ['.txt'] } }]
+    }).then(function(handle) {
+      return handle.createWritable();
+    }).then(function(writable) {
+      writable.write(blob);
+      return writable.close();
+    }).catch(function(e) {
+      if (e.name !== 'AbortError') fallbackDownload();
+    });
+  } else {
+    fallbackDownload();
+  }
+
+  function fallbackDownload() {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    a.click();
+  }
+}
+
+function completeTaskStep(customerId, taskType, event) {
+  event.stopPropagation();
+  var c = customers.find(function(x) { return x.id === customerId; });
+  if (!c) return;
+  var stepNum = taskType === 'prepare' ? 1 : taskType === 'deliver' ? 2 : 3;
+  var now = new Date().toISOString();
+  var changed = false;
+  (c.checklist || []).forEach(function(item) {
+    if (item.step === stepNum && !item.checked) {
+      item.checked = true;
+      item.completedAt = now;
+      changed = true;
+    }
+  });
+  if (changed) {
+    var stepLabel = taskType === 'prepare' ? '資料作成' : taskType === 'deliver' ? '資料提供' : '更新手続き電話';
+    c.history.push({ id: uid(), date: now, content: stepLabel + ' 完了（タスク一覧より）' });
+    c.updatedAt = now;
+    save();
+    renderAll();
+  }
+}
+
+// ============================================================
+// Render all
+// ============================================================
+function renderAll() {
+  try { renderStats(); } catch(e) { console.error('renderStats error:', e); }
+  try { buildMonthOptions(); } catch(e) { console.error('buildMonthOptions error:', e); }
+  try { renderList(); } catch(e) { alert('表示エラー: ' + e.message); console.error('renderList error:', e); }
+  try { renderTasks(); } catch(e) { console.error('renderTasks error:', e); }
+}
+
+// ============================================================
+// Init
+// ============================================================
+load();
+renderAll();
+</script>
+</body>
+</html>
