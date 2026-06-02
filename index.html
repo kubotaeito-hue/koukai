@@ -749,6 +749,7 @@
         <div class="history-add">
           <textarea class="form-control" id="d-new-hist" placeholder="対応内容を入力..." rows="2"></textarea>
           <button class="btn btn-blue btn-sm" onclick="addHistory()">追加</button>
+          <button class="btn btn-secondary btn-sm" onclick="downloadHistory()" title="対応履歴をメモ帳用テキストで保存">&#128196; メモ帳に保存</button>
         </div>
         <div id="d-history"></div>
       </div>
@@ -1714,6 +1715,58 @@ function saveNextAction() {
 // ============================================================
 // History
 // ============================================================
+function downloadHistory() {
+  var c = getC();
+  if (!c) return;
+  var hist = (c.history || []).slice(); // 古い順
+
+  var lines = [];
+  lines.push('■ 対応履歴　' + c.name + ' 様');
+  lines.push('保険種別：' + (CAT_LABEL[c.category] || '-') + '　更新日：' + fmtRenewalDate(c.renewalDate));
+  var sd = getSubmitDeadline(c);
+  if (sd) lines.push('提出締切：' + fmtRenewalDate(sd));
+  lines.push('');
+
+  if (hist.length === 0) {
+    lines.push('（対応履歴はありません）');
+  } else {
+    hist.forEach(function(h) {
+      lines.push('・' + fmtDT(h.date) + '　' + h.content);
+    });
+  }
+
+  lines.push('');
+  lines.push('---');
+  lines.push('出力日時：' + new Date().toLocaleString('ja-JP'));
+
+  var text = lines.join('\r\n');
+  var blob = new Blob(['﻿' + text], { type: 'text/plain;charset=utf-8' });
+  var fileName = 'history_' + c.name + '_' + toDateStr(new Date()) + '.txt';
+
+  if (window.showSaveFilePicker) {
+    window.showSaveFilePicker({
+      suggestedName: fileName,
+      types: [{ description: 'テキストファイル', accept: { 'text/plain': ['.txt'] } }]
+    }).then(function(handle) {
+      return handle.createWritable();
+    }).then(function(writable) {
+      writable.write(blob);
+      return writable.close();
+    }).catch(function(e) {
+      if (e.name !== 'AbortError') fallback();
+    });
+  } else {
+    fallback();
+  }
+
+  function fallback() {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    a.click();
+  }
+}
+
 function renderHistory(c) {
   const hist = (c.history || []).slice().reverse();
   if (hist.length === 0) {
