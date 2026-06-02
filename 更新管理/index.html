@@ -1990,9 +1990,11 @@ function generateTasks() {
     var s1 = cl.filter(function(i) { return i.step === 1; });
     var s2 = cl.filter(function(i) { return i.step === 2; });
     var s3 = cl.filter(function(i) { return i.step === 3; });
-    var step1Done = s1.length === 0 || s1.every(function(i) { return i.checked; });
-    var step2Done = s2.length === 0 || s2.every(function(i) { return i.checked; });
-    var step3Done = s3.length === 0 || s3.every(function(i) { return i.checked; });
+    var done = c.stepsCompleted || {};
+    // チェックリストが全完了 OR 完了ボタンで対応済みフラグが立っていればステップ完了
+    var step1Done = done.prepare || s1.length === 0 || s1.every(function(i) { return i.checked; });
+    var step2Done = done.deliver || s2.length === 0 || s2.every(function(i) { return i.checked; });
+    var step3Done = done.call    || s3.length === 0 || s3.every(function(i) { return i.checked; });
     var currentStep = !step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : null;
     // ビジ総・業災は提出締め切り日（更新月前月10日）を基準にスケジュール
     var effDeadline = getEffectiveDeadline(c);
@@ -2280,9 +2282,11 @@ function completeTaskStep(customerId, taskType, event) {
     btn.disabled = true;
   }
 
-  // チェックリストには触れない。対応履歴に記録するだけ。
+  // チェックリストには触れない。対応済みフラグを立てて履歴に記録する。
   var stepLabel = taskType === 'prepare' ? '資料作成' : taskType === 'deliver' ? '資料提供' : '更新手続き電話';
   var now = new Date().toISOString();
+  if (!c.stepsCompleted) c.stepsCompleted = {};
+  c.stepsCompleted[taskType] = true;
   c.history.push({ id: uid(), date: now, content: stepLabel + ' 対応済（タスク一覧より）' });
   c.updatedAt = now;
   save();
