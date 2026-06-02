@@ -1228,7 +1228,8 @@ function renderList() {
 
   let list = customers.filter(c => {
     const st = calcStatus(c);
-    const matchF = currentFilter === 'all' ? true : st === currentFilter;
+    // 「完了」は通常非表示。「完了」フィルター選択時のみ表示
+    const matchF = currentFilter === 'all' ? st !== 'done' : st === currentFilter;
     const matchQ = !q || c.name.toLowerCase().includes(q);
     const matchM = monthSel === 'all' || c.renewalMonth === monthSel;
     return matchF && matchQ && matchM;
