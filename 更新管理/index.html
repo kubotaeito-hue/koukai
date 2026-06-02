@@ -1995,11 +1995,10 @@ function generateTasks() {
     var s1 = cl.filter(function(i) { return i.step === 1; });
     var s2 = cl.filter(function(i) { return i.step === 2; });
     var s3 = cl.filter(function(i) { return i.step === 3; });
-    var done = c.stepsCompleted || {};
-    // チェックリストが全完了 OR 完了ボタンで対応済み日付が入っていればステップ完了
-    var step1Done = !!done.prepare || s1.length === 0 || s1.every(function(i) { return i.checked; });
-    var step2Done = !!done.deliver || s2.length === 0 || s2.every(function(i) { return i.checked; });
-    var step3Done = !!done.call    || s3.length === 0 || s3.every(function(i) { return i.checked; });
+    // ステップ判定はチェックリストのみで決める（完了ボタンはステップを進めない）
+    var step1Done = s1.length === 0 || s1.every(function(i) { return i.checked; });
+    var step2Done = s2.length === 0 || s2.every(function(i) { return i.checked; });
+    var step3Done = s3.length === 0 || s3.every(function(i) { return i.checked; });
     var currentStep = !step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : null;
     // ビジ総・業災は提出締め切り日（更新月前月10日）を基準にスケジュール
     var effDeadline = getEffectiveDeadline(c);
@@ -2016,12 +2015,11 @@ function generateTasks() {
   custInfo.forEach(function(x) {
     if (x.currentStep === null) return;
     var c = x.c;
+    // 「本日対応済み（完了ボタン）」の人は今日のタスク一覧から除外。翌日また表示される。
+    if (c.dismissedToday === todayStr) return;
     var status = calcStatus(c);
     var effDeadline = x.effDeadline;
     var submitDeadline = getSubmitDeadline(c); // ビジ総・業災のみ非null
-
-    var done = c.stepsCompleted || {};
-    var tomorrowStr = addCalDays(todayStr, 1);
 
     if (x.currentStep === 1) {
       // 資料作成：資料提供予定日の2営業日前（過去になる場合は今日）
@@ -2031,17 +2029,13 @@ function generateTasks() {
       tasks.push({ customerId: c.id, customerName: c.name, category: c.category, renewalDate: c.renewalDate, submitDeadline: submitDeadline, taskType: 'prepare', taskLabel: '資料作成', dueDate: dueDate, status: status });
     } else if (x.currentStep === 2) {
       // 資料提供：スケジュール日（過去になる場合は今日）
-      // ただし資料作成を今日完了した場合は翌日以降に表示（完了直後に即出てこないよう）
       var rawDue2 = deliverySchedule[c.id] || todayStr;
       var dueDate2 = rawDue2 < todayStr ? todayStr : rawDue2;
-      if (done.prepare === todayStr && dueDate2 <= todayStr) dueDate2 = tomorrowStr;
       tasks.push({ customerId: c.id, customerName: c.name, category: c.category, renewalDate: c.renewalDate, submitDeadline: submitDeadline, taskType: 'deliver', taskLabel: '資料提供', dueDate: dueDate2, status: status });
     } else if (x.currentStep === 3) {
       // 更新手続き電話：実質期限の50日前（ビジ総・業災は提出締め切り日の50日前）
-      // ただし資料提供を今日完了した場合は翌日以降に表示
       var rawDue3 = effDeadline ? subtractCalDays(effDeadline, 50) : null;
       var dueDate3 = rawDue3 && rawDue3 < todayStr ? todayStr : rawDue3;
-      if (done.deliver === todayStr && dueDate3 <= todayStr) dueDate3 = tomorrowStr;
       tasks.push({ customerId: c.id, customerName: c.name, category: c.category, renewalDate: c.renewalDate, submitDeadline: submitDeadline, taskType: 'call', taskLabel: '更新手続き電話', dueDate: dueDate3, status: status });
     }
   });
@@ -2290,16 +2284,15 @@ function completeTaskStep(customerId, taskType, event) {
   if (btn) {
     var card = btn.closest('.task-card');
     if (card) { card.style.opacity = '0.55'; card.style.pointerEvents = 'none'; }
-    btn.textContent = '✓ 対応済';
+    btn.textContent = '✓ 本日対応済';
     btn.disabled = true;
   }
 
-  // チェックリストには触れない。対応済みフラグを立てて履歴に記録する。
-  var stepLabel = taskType === 'prepare' ? '資料作成' : taskType === 'deliver' ? '資料提供' : '更新手続き電話';
+  // チェックリストもステップも一切進めない。
+  // 「今日この人に着手した」という意味で、今日のタスク一覧からだけ消す（翌日また表示）。
   var now = new Date().toISOString();
-  if (!c.stepsCompleted) c.stepsCompleted = {};
-  c.stepsCompleted[taskType] = toDateStr(new Date()); // 完了日を保存
-  c.history.push({ id: uid(), date: now, content: stepLabel + ' 対応済（タスク一覧より）' });
+  c.dismissedToday = toDateStr(new Date()); // 本日対応した日付を記録
+  c.history.push({ id: uid(), date: now, content: '本日対応（タスク一覧で完了）' });
   c.updatedAt = now;
   save();
   renderAll();
