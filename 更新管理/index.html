@@ -2286,11 +2286,12 @@ function downloadTodayTasks() {
   if (todayTasks.length === 0) {
     lines.push('　本日対応のタスクはありません。');
   } else {
-    todayTasks.forEach(function(t, i) {
-      var renewal = t.submitDeadline
-        ? '提出締切 ' + fmtRenewalDate(t.submitDeadline)
-        : '更新日 ' + fmtRenewalDate(t.renewalDate) + renewalDaysLabel(t.renewalDate);
-      lines.push('・' + t.customerName + ' 様　' + t.taskLabel + '　' + (CAT_LABEL[t.category] || '') + '　' + renewal);
+    // 同名は1つにまとめ、「お客様名 様　更新作業」だけ出力
+    var seen = {};
+    todayTasks.forEach(function(t) {
+      if (seen[t.customerName]) return;
+      seen[t.customerName] = true;
+      lines.push('・' + t.customerName + ' 様　更新作業');
     });
   }
 
