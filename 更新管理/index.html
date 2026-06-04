@@ -948,32 +948,20 @@ const CAT_BADGE = {
   other:     'badge-other'
 };
 
-// 共通チェックリスト（資料作成内容だけ種別ごとに変える）
-function makeChecklist(step1extra) {
+// 共通チェックリスト（全種別共通・シンプル版）
+function makeChecklist() {
   return [
-    ...step1extra.map(label => ({ label, step: 1 })),
-    { label: '【資料作成】更新見積書の作成', step: 1 },
-    { label: '【資料提供】お客様へ更新資料を提供', step: 2 },
-    { label: '【更新手続き電話】更新内容の確認・ご説明', step: 3 },
-    { label: '【更新手続き電話】更新のご承認をいただく', step: 3 },
-    { label: '更新手続き完了・保険料の確認', step: 3 }
+    { label: '更新見積書の作成', step: 1 },
+    { label: 'お客様へ更新資料を提供', step: 2 },
+    { label: '更新のご承認を頂く', step: 3 },
+    { label: '計上完了', step: 3 },
+    { label: 'お客様控えへ発送', step: 3 }
   ];
 }
 
-const CHECKLISTS = {
-  auto:      makeChecklist(['【資料作成】等級・車両情報の確認']),
-  auto_corp: makeChecklist(['【資料作成】等級・車両情報の確認', '【資料作成】法人名義・使用目的の確認']),
-  fleet:     makeChecklist(['【資料作成】フリート台数・車両リストの確認', '【資料作成】事故成績の確認']),
-  fire:      makeChecklist(['【資料作成】建物情報・補償内容の確認']),
-  kigsogo:   makeChecklist(['【資料作成】売上高・財物・賠償内容の確認']),
-  shakuya:   makeChecklist(['【資料作成】賃貸物件情報・補償内容の確認']),
-  bizmas:    makeChecklist(['【資料作成】事業内容・補償内容の確認']),
-  bizso:     makeChecklist(['【資料作成】事業内容・補償内容の確認']),
-  gyosai:    makeChecklist(['【資料作成】従業員数・業務内容の確認']),
-  kigai:     makeChecklist(['【資料作成】補償内容・対象人数の確認']),
-  golf:      makeChecklist(['【資料作成】補償内容の確認']),
-  other:     makeChecklist(['【資料作成】補償内容の確認'])
-};
+const DEFAULT_CHECKLIST = makeChecklist();
+// 種別ごとの内容差をなくし、全種別で同じチェックリストを使う
+const CHECKLISTS = new Proxy({}, { get: function() { return makeChecklist(); } });
 
 const STATUS_DEF = {
   'not-started': { label: '未着手',   bg: '#f3f4f6', fg: '#4b5563', dot: '#9ca3af' },
@@ -2363,9 +2351,46 @@ function renderAll() {
 }
 
 // ============================================================
+// 既存お客様のチェックリストを新形式へ移行（ステップ単位で完了を引き継ぐ）
+// ============================================================
+function migrateChecklists() {
+  var NEW_LABELS = ['更新見積書の作成', 'お客様へ更新資料を提供', '更新のご承認を頂く', '計上完了', 'お客様控えへ発送'];
+  var changed = false;
+  customers.forEach(function(c) {
+    var cl = c.checklist || [];
+    // 標準項目（step 1〜3）のラベルが既に新形式ならスキップ
+    var standard = cl.filter(function(i) { return i.step >= 1; });
+    var labels = standard.map(function(i) { return i.label; });
+    var isNew = labels.length === NEW_LABELS.length && labels.every(function(l) { return NEW_LABELS.indexOf(l) !== -1; });
+    if (isNew) return;
+
+    // 旧チェックリストから各ステップの「全完了」状態を判定
+    function stepDone(step) {
+      var items = cl.filter(function(i) { return i.step === step; });
+      return items.length > 0 && items.every(function(i) { return i.checked; });
+    }
+    var d = { 1: stepDone(1), 2: stepDone(2), 3: stepDone(3) };
+    var now = new Date().toISOString();
+
+    var newCl = makeChecklist().map(function(item, idx) {
+      var done = !!d[item.step];
+      return { id: uid() + idx, label: item.label, step: item.step, checked: done, completedAt: done ? now : null };
+    });
+    // ユーザーが手動追加した独自項目（step 0）は残す
+    cl.filter(function(i) { return !i.step; }).forEach(function(i) {
+      newCl.push({ id: i.id || uid(), label: i.label, step: 0, checked: !!i.checked, completedAt: i.completedAt || null });
+    });
+    c.checklist = newCl;
+    changed = true;
+  });
+  if (changed) save();
+}
+
+// ============================================================
 // Init
 // ============================================================
 load();
+migrateChecklists();
 renderAll();
 </script>
 </body>
