@@ -1697,6 +1697,7 @@ function toggleCheck(idx) {
   renderChecklist(c);
   renderStats();
   renderList();
+  renderTasks();
 }
 
 function editChkItem(idx) { editingChkIdx = idx; renderChecklist(getC()); }
@@ -1710,6 +1711,9 @@ function saveChkEdit(idx) {
   c.updatedAt = new Date().toISOString();
   save();
   renderChecklist(c);
+  renderStats();
+  renderList();
+  renderTasks();
 }
 function delChkItem(idx) {
   const c = getC();
@@ -1717,6 +1721,9 @@ function delChkItem(idx) {
   c.updatedAt = new Date().toISOString();
   save();
   renderChecklist(c);
+  renderStats();
+  renderList();
+  renderTasks();
 }
 function addCheckItem() {
   const c = getC();
@@ -1727,6 +1734,9 @@ function addCheckItem() {
   c.updatedAt = new Date().toISOString();
   save();
   renderChecklist(c);
+  renderStats();
+  renderList();
+  renderTasks();
 }
 
 
