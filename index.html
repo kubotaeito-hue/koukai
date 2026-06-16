@@ -2296,7 +2296,9 @@ function downloadTodayTasks() {
       var c = customers.find(function(x) { return x.id === t.customerId; });
       var stDef = c ? STATUS_DEF[calcStatus(c)] : null;
       var stLabel = stDef ? stDef.label : '';
-      lines.push('・' + t.customerName + ' 様　' + stLabel + '　更新作業');
+      var next = (c && c.checklist) ? c.checklist.find(function(i){ return !i.checked; }) : null;
+      var nextLabel = next ? next.label : '完了';
+      lines.push('・' + t.customerName + ' 様　' + stLabel + '　' + nextLabel + '　更新作業');
     });
   }
 
