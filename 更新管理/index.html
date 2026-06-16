@@ -2288,12 +2288,15 @@ function downloadTodayTasks() {
   if (todayTasks.length === 0) {
     lines.push('　本日対応のタスクはありません。');
   } else {
-    // 同名は1つにまとめ、「お客様名 様　更新作業」だけ出力
+    // 同名は1つにまとめ、「お客様名 様　[ステータス]　更新作業」を出力
     var seen = {};
     todayTasks.forEach(function(t) {
       if (seen[t.customerName]) return;
       seen[t.customerName] = true;
-      lines.push('・' + t.customerName + ' 様　更新作業');
+      var c = customers.find(function(x) { return x.id === t.customerId; });
+      var stDef = c ? STATUS_DEF[calcStatus(c)] : null;
+      var stLabel = stDef ? stDef.label : '';
+      lines.push('・' + t.customerName + ' 様　' + stLabel + '　更新作業');
     });
   }
 
